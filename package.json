@@ -1,0 +1,22 @@
+{
+  "name": "geniusminds-homeschooling",
+  "version": "1.0.0",
+  "description": "Full-stack application for Genius Minds Homeschooling featuring booking system, email notifications, visitor analytics, and admin dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.9.7",
+    "nodemailer": "^6.9.13"
+  }
+}

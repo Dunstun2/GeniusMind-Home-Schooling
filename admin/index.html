@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Genius Minds Homeschooling</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">GM</div>
+                <div class="brand-details">
+                    <span class="brand-name">Genius Minds</span>
+                    <span class="brand-tag">Administration</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a href="#bookings" class="nav-item" data-tab="bookings">
+                    <span class="nav-icon">🎓</span> Bookings
+                </a>
+                <a href="#emails" class="nav-item" data-tab="emails">
+                    <span class="nav-icon">✉️</span> Email Dispatch
+                </a>
+                <a href="#analytics" class="nav-item" data-tab="analytics">
+                    <span class="nav-icon">📈</span> Analytics
+                </a>
+                <a href="#users" class="nav-item" data-tab="users">
+                    <span class="nav-icon">👤</span> Admin Accounts
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator-card">
+                    <div class="status-header">
+                        <span class="indicator-dot green" id="dbIndicator"></span>
+                        <strong id="dbText">MySQL Mode</strong>
+                    </div>
+                    <span class="status-label">Engine Connection</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <!-- Header bar -->
+            <header class="top-bar">
+                <h1 class="page-title" id="pageTitle">System Overview</h1>
+                <div class="user-controls">
+                    <div class="user-info">
+                        <span class="user-avatar" id="userAvatar">A</span>
+                        <div class="user-text">
+                            <strong id="adminUsername">admin</strong>
+                            <span>System Administrator</span>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-logout">Logout</button>
+                </div>
+            </header>
+
+            <!-- Content Container -->
+            <div class="content-wrapper">
+                <!-- Section 1: Dashboard -->
+                <section id="tab-dashboard" class="tab-content active">
+                    <!-- Real-time Active Users Banner -->
+                    <div class="realtime-banner">
+                        <div class="pulsing-indicator">
+                            <span class="pulse-dot"></span>
+                            <span class="pulse-label"><strong id="activeUsers">0</strong> active visitors online right now</span>
+                        </div>
+                    </div>
+
+                    <!-- Stat Cards Row -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Total Bookings</span>
+                                <span class="stat-icon purple">🎓</span>
+                            </div>
+                            <h2 class="stat-value" id="statBookings">0</h2>
+                            <p class="stat-trend">Student enrollments requests</p>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Visitor Sessions</span>
+                                <span class="stat-icon blue">👤</span>
+                            </div>
+                            <h2 class="stat-value" id="statSessions">0</h2>
+                            <p class="stat-trend">Unique browser visits</p>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Total Pageviews</span>
+                                <span class="stat-icon pink">📈</span>
+                            </div>
+                            <h2 class="stat-value" id="statPageviews">0</h2>
+                            <p class="stat-trend">Interactive screen views</p>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Avg. Session Time</span>
+                                <span class="stat-icon green">⏱️</span>
+                             </div>
+                             <h2 class="stat-value" id="statDuration">0m 0s</h2>
+                             <p class="stat-trend">Average time on site</p>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Bounce Rate</span>
+                                <span class="stat-icon red">🚪</span>
+                             </div>
+                             <h2 class="stat-value" id="statBounce">0%</h2>
+                             <p class="stat-trend">Single page session ratio</p>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Conversion Rate</span>
+                                <span class="stat-icon gold">🎯</span>
+                            </div>
+                            <h2 class="stat-value" id="statConversion">0%</h2>
+                            <p class="stat-trend">Session-to-booking ratio</p>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="charts-grid">
+                        <div class="chart-card span-2">
+                            <h3>Visitor Traffic (Last 7 Days)</h3>
+                            <div class="chart-container">
+                                <canvas id="timelineChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Requested Learning Formats</h3>
+                            <div class="chart-container">
+                                <canvas id="servicesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Browser Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="browsersChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card span-2">
+                            <h3>Operating Systems & Devices</h3>
+                            <div class="chart-container">
+                                <canvas id="devicesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Bookings -->
+                <section id="tab-bookings" class="tab-content">
+                    <div class="action-bar">
+                        <div class="search-box">
+                            <input type="text" id="bookingSearch" placeholder="Search by name, email, or phone...">
+                        </div>
+                        <div class="filter-controls">
+                            <select id="bookingFilter">
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Parent Name</th>
+                                    <th>Email / Phone</th>
+                                    <th>Preferred Service</th>
+                                    <th>Additional Notes</th>
+                                    <th>Created At</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">Loading booking records...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 3: Email Dispatch -->
+                <section id="tab-emails" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Log ID</th>
+                                    <th>Booking ID</th>
+                                    <th>Recipient</th>
+                                    <th>Subject Line</th>
+                                    <th>Dispatch Status</th>
+                                    <th>Sent Date</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading dispatch records...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 4: Visitor Analytics (Google Analytics Style Dashboard) -->
+                <section id="tab-analytics" class="tab-content">
+                    <!-- Top metrics grid (3 columns) -->
+                    <div class="ga-metrics-grid">
+                        <!-- Card 1: Countries -->
+                        <div class="ga-card">
+                            <div class="ga-card-header">
+                                <h3>Countries</h3>
+                                <span class="ga-card-sub text-muted">VISITORS</span>
+                            </div>
+                            <div class="ga-card-body" id="gaCountriesList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Devices / Browsers -->
+                        <div class="ga-card">
+                            <div class="ga-card-header">
+                                <div class="ga-tabs">
+                                    <button class="ga-tab-btn active" id="gaTabDevicesBtn">Devices</button>
+                                    <button class="ga-tab-btn" id="gaTabBrowsersBtn">Browsers</button>
+                                </div>
+                                <span class="ga-card-sub text-muted">VISITORS</span>
+                            </div>
+                            <div class="ga-card-body" id="gaDevicesBrowsersList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Operating Systems -->
+                        <div class="ga-card">
+                            <div class="ga-card-header">
+                                <h3>Operating Systems</h3>
+                                <span class="ga-card-sub text-muted">VISITORS</span>
+                            </div>
+                            <div class="ga-card-body" id="gaOsList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom row metrics grid (2 columns) -->
+                    <div class="ga-metrics-grid span-2-col">
+                        <!-- Card 4: Events -->
+                        <div class="ga-card">
+                            <div class="ga-card-header text-split">
+                                <h3>Events</h3>
+                                <div class="ga-card-cols text-muted">
+                                    <span>VISITORS</span>
+                                    <span>TOTAL</span>
+                                </div>
+                            </div>
+                            <div class="ga-card-body" id="gaEventsList">
+                                <!-- Dynamic rows or empty state -->
+                            </div>
+                        </div>
+
+                        <!-- Card 5: Referrers -->
+                        <div class="ga-card">
+                            <div class="ga-card-header">
+                                <h3>Referrers</h3>
+                                <span class="ga-card-sub text-muted">VISITORS</span>
+                            </div>
+                            <div class="ga-card-body" id="gaReferrersList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diagnostic Toggler Button -->
+                    <div class="diagnostic-toggler-container">
+                        <button id="toggleDiagnosticLogs" class="btn btn-diagnostic-toggle">⚙️ Show Diagnostic Activity Logs</button>
+                    </div>
+
+                    <!-- Collapsible Diagnostic Logs (Visitor Sessions & Events Tables) -->
+                    <div class="diagnostic-logs-container" id="diagnosticLogsContainer" style="display: none;">
+                        <div class="split-analytics-layout" style="margin-top: 24px;">
+                            <!-- Visitor Sessions Table -->
+                            <div class="analytics-panel">
+                                <h3>Recent Visitor Sessions</h3>
+                                <div class="table-container small">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Session ID</th>
+                                                <th>OS/Browser</th>
+                                                <th>Referrer</th>
+                                                <th>Timestamp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sessionsTableBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center">Loading sessions...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Interaction Events Table -->
+                            <div class="analytics-panel">
+                                <h3>Live Event Feed</h3>
+                                <div class="table-container small">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Type</th>
+                                                <th>Event Trigger</th>
+                                                <th>Payload</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="eventsTableBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center">Loading interaction logs...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Admin User Management -->
+                <section id="tab-users" class="tab-content">
+                    <div class="split-analytics-layout">
+                        <!-- Create Admin Card -->
+                        <div class="analytics-panel">
+                            <h3>Register Administrator Account</h3>
+                            <div class="form-card-wrapper">
+                                <form id="createAdminForm" class="admin-form-glass">
+                                    <div class="form-group-glass">
+                                        <label for="newUsername">Username</label>
+                                        <input type="text" id="newUsername" required placeholder="Enter administrative username">
+                                    </div>
+                                    <div class="form-group-glass">
+                                        <label for="newPassword">Password</label>
+                                        <input type="password" id="newPassword" required placeholder="Enter administrative password">
+                                    </div>
+                                    <button type="submit" class="btn btn-submit-account">Create Admin Account</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Active Admins Table -->
+                        <div class="analytics-panel">
+                            <h3>Active Administrative Credentials</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Date Registered</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminsTableBody">
+                                        <tr>
+                                            <td colspan="2" class="text-center">Loading administrators...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Email Details Modal overlay -->
+    <div class="modal" id="emailModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Dispatch Details</h3>
+                <button class="modal-close" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- External UI chart script from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

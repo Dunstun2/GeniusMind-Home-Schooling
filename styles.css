@@ -300,9 +300,9 @@ section {
 /* Hero Section */
 .hero {
     position: relative;
-    padding-top: 10rem;
-    padding-bottom: 8rem;
-    min-height: 100vh;
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+    min-height: 85vh;
     display: flex;
     align-items: center;
     overflow: hidden;
@@ -822,7 +822,8 @@ section {
     }
     
     .hero {
-        padding-top: 8rem;
+        padding-top: 5rem;
+        padding-bottom: 5rem;
         text-align: center;
     }
     
@@ -882,3 +883,205 @@ section {
         padding: 2rem;
     }
 }
+
+/* ==========================================================================
+   Achievements & Events Highlights Slider Styles
+   ========================================================================== */
+.highlights-slider {
+    position: relative;
+    width: 100%;
+    min-height: 100vh; /* Big like before */
+    overflow: hidden;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Horizontal Sliding Carousel Track */
+.highlights-slider .slider-container {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 100%;
+    min-height: 100vh;
+    transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1); /* Ultra smooth slide transition */
+}
+
+.highlights-slider .slide {
+    width: 100%;
+    flex-shrink: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding-top: 6rem; /* Top offset to avoid fixed navbar overlapping contents */
+    padding-bottom: 5rem; /* Space for dots at bottom */
+    position: relative;
+}
+
+/* Staggered Content Animation */
+.highlights-slider .slide .animate-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.highlights-slider .slide.active .animate-up {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.highlights-slider .slide .delay-1 { transition-delay: 0.12s; }
+.highlights-slider .slide .delay-2 { transition-delay: 0.24s; }
+.highlights-slider .slide .delay-3 { transition-delay: 0.36s; }
+
+/* Custom badges */
+.event-badge {
+    background: rgba(99, 102, 241, 0.1) !important;
+    color: var(--primary-light) !important;
+    border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.success-badge {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #10b981 !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.announce-badge {
+    background: rgba(249, 115, 22, 0.1) !important;
+    color: var(--secondary) !important;
+    border-color: rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Styled glassmorphic glowing card shadows */
+.glow-purple { border-color: rgba(99, 102, 241, 0.25) !important; box-shadow: 0 15px 40px rgba(99, 102, 241, 0.15) !important; }
+.glow-green { border-color: rgba(16, 185, 129, 0.25) !important; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15) !important; }
+.glow-orange { border-color: rgba(249, 115, 22, 0.25) !important; box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15) !important; }
+
+/* Slider manual navigations (Arrows) */
+.highlights-slider .slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--bg-surface-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 99;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.highlights-slider .slider-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.highlights-slider .prev-btn { left: 2.5rem; }
+.highlights-slider .next-btn { right: 2.5rem; }
+
+/* Navigation pagination dots */
+.highlights-slider .slider-dots {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.8rem;
+    z-index: 99;
+}
+
+.highlights-slider .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    opacity: 0.4;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.highlights-slider .dot:hover {
+    opacity: 0.8;
+}
+
+.highlights-slider .dot.active {
+    width: 32px;
+    border-radius: 6px;
+    background: var(--primary);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+}
+
+/* Responsiveness overrides */
+@media (max-width: 1024px) {
+    .highlights-slider .slider-btn { display: none; } /* Hide arrows on tablets and mobile devices */
+    .highlights-slider {
+        min-height: 100vh;
+    }
+    .highlights-slider .slide {
+        padding-top: 7rem;
+        padding-bottom: 5rem;
+        width: 100%;
+        flex-shrink: 0;
+        min-height: 100vh;
+    }
+    .highlights-slider .hero-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+        padding-top: 2rem;
+    }
+    .highlights-slider .hero-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .highlights-slider .hero-title {
+        font-size: 2.5rem !important;
+    }
+    .highlights-slider .hero-subtitle {
+        font-size: 1rem !important;
+        max-width: 100%;
+    }
+    .highlights-slider .hero-buttons {
+        justify-content: center;
+    }
+    .highlights-slider .hero-stats {
+        justify-content: center;
+        gap: 2rem;
+    }
+    .highlights-slider .hero-image-wrapper {
+        display: none; /* Hide slide images on tablet/mobile to keep layout clean and prevent overflow */
+    }
+    .highlights-slider .slider-dots {
+        bottom: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .highlights-slider {
+        min-height: 100vh;
+    }
+    .highlights-slider .hero-title {
+        font-size: 2.2rem !important;
+    }
+    .highlights-slider .stat-number {
+        font-size: 1.5rem !important;
+    }
+}
+
+
