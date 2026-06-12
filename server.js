@@ -5,6 +5,9 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const multer = require('multer');
+const sharp = require('sharp');
 require('dotenv').config({ override: true });
 
 const app = express();
@@ -37,7 +40,8 @@ const memDb = {
     email_logs: [],
     analytics_sessions: [],
     analytics_events: [],
-    admin_users: []
+    admin_users: [],
+    highlights_banners: []
 };
 
 // Seed default admin in-memory
@@ -50,6 +54,91 @@ memDb.admin_users.push({
     password_hash: defaultPasswordHash,
     created_at: new Date()
 });
+
+// Seed default highlights banners in-memory
+memDb.highlights_banners = [
+    {
+        id: 1,
+        badge_text: 'Upcoming Event',
+        badge_class: 'event-badge',
+        title: 'Junior Programmer <span>Bootcamp.</span>',
+        subtitle: "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design, building critical logical skills for the future.",
+        btn_primary_text: 'Enroll in Coding Program',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'View Syllabus',
+        btn_secondary_link: '#curriculum',
+        stat_1_number: 'June 15',
+        stat_1_label: 'Start Date',
+        stat_2_number: 'Ages 8-18',
+        stat_2_label: 'Target Groups',
+        stat_3_number: 'Hands-on',
+        stat_3_label: 'Project Based',
+        image_path: 'assets/images/upcoming_coder.png',
+        floating_icon: '💻',
+        floating_title: 'Python & Web',
+        floating_desc: 'Weekend Workshops',
+        glow_class: 'glow-purple',
+        sort_order: 1,
+        is_active: 1,
+        start_date: null,
+        end_date: null,
+        created_at: new Date()
+    },
+    {
+        id: 2,
+        badge_text: 'Outstanding Achievement',
+        badge_class: 'success-badge',
+        title: 'Outstanding IGCSE <span>Triumphs.</span>',
+        subtitle: 'We celebrate academic excellence! Our IGCSE student Esther W. scored an outstanding 98% in Mathematics under customized Genius Minds personal tutoring.',
+        btn_primary_text: 'Request Personal Tutor',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'Our Success Stories',
+        btn_secondary_link: '#about',
+        stat_1_number: '98%',
+        stat_1_label: 'Highest Score',
+        stat_2_number: 'A+ Grade',
+        stat_2_label: 'Average Performance',
+        stat_3_number: '1-on-1',
+        stat_3_label: 'Personalized Care',
+        image_path: 'assets/images/achievement_trophy.png',
+        floating_icon: '🏆',
+        floating_title: 'IGCSE Maths',
+        floating_desc: 'Esther W. 98%',
+        glow_class: 'glow-green',
+        sort_order: 2,
+        is_active: 1,
+        start_date: null,
+        end_date: null,
+        created_at: new Date()
+    },
+    {
+        id: 3,
+        badge_text: 'Enrollment Announcement',
+        badge_class: 'announce-badge',
+        title: 'Term 3 Admissions <span>Now Open.</span>',
+        subtitle: 'Enrollments for Online, Home-based, and Physical center tutoring classes are open. We support IGCSE, CBE/CBC, and the 8-4-4 systems. Secure your child\'s success today!',
+        btn_primary_text: 'Book a Free Session',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'Explore Formats',
+        btn_secondary_link: '#services',
+        stat_1_number: 'Active',
+        stat_1_label: 'Admissions Status',
+        stat_2_number: 'Online/Home',
+        stat_2_label: 'Flexible Formats',
+        stat_3_number: 'Affordable',
+        stat_3_label: 'Flexible Payments',
+        image_path: 'assets/images/announcement_bell.png',
+        floating_icon: '🔔',
+        floating_title: 'Admissions Open',
+        floating_desc: 'CBE, IGCSE & 8-4-4',
+        glow_class: 'glow-orange',
+        sort_order: 3,
+        is_active: 1,
+        start_date: null,
+        end_date: null,
+        created_at: new Date()
+    }
+];
 
 // Helper functions for query/insert operations abstracting MySQL vs Memory
 const db = {
@@ -187,6 +276,91 @@ const db = {
                 return [...memDb.analytics_events].sort((a, b) => b.created_at - a.created_at);
             }
 
+            if (sqlUpper.startsWith('SELECT * FROM HIGHLIGHTS_BANNERS')) {
+                return [...memDb.highlights_banners].sort((a, b) => a.sort_order - b.sort_order);
+            }
+
+            if (sqlUpper.startsWith('INSERT INTO HIGHLIGHTS_BANNERS')) {
+                const id = memDb.highlights_banners.length + 1;
+                const record = {
+                    id,
+                    badge_text: params[0],
+                    badge_class: params[1],
+                    title: params[2],
+                    subtitle: params[3],
+                    btn_primary_text: params[4],
+                    btn_primary_link: params[5],
+                    btn_secondary_text: params[6],
+                    btn_secondary_link: params[7],
+                    stat_1_number: params[8],
+                    stat_1_label: params[9],
+                    stat_2_number: params[10],
+                    stat_2_label: params[11],
+                    stat_3_number: params[12],
+                    stat_3_label: params[13],
+                    image_path: params[14],
+                    floating_icon: params[15],
+                    floating_title: params[16],
+                    floating_desc: params[17],
+                    glow_class: params[18],
+                    sort_order: params[19] || 0,
+                    is_active: params[20] !== undefined ? params[20] : 1,
+                    start_date: params[21] || null,
+                    end_date: params[22] || null,
+                    created_at: new Date()
+                };
+                memDb.highlights_banners.push(record);
+                return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('UPDATE HIGHLIGHTS_BANNERS')) {
+                const id = params[23];
+                const banner = memDb.highlights_banners.find(b => b.id == id);
+                if (banner) {
+                    banner.badge_text = params[0];
+                    banner.badge_class = params[1];
+                    banner.title = params[2];
+                    banner.subtitle = params[3];
+                    banner.btn_primary_text = params[4];
+                    banner.btn_primary_link = params[5];
+                    banner.btn_secondary_text = params[6];
+                    banner.btn_secondary_link = params[7];
+                    banner.stat_1_number = params[8];
+                    banner.stat_1_label = params[9];
+                    banner.stat_2_number = params[10];
+                    banner.stat_2_label = params[11];
+                    banner.stat_3_number = params[12];
+                    banner.stat_3_label = params[13];
+                    banner.image_path = params[14];
+                    banner.floating_icon = params[15];
+                    banner.floating_title = params[16];
+                    banner.floating_desc = params[17];
+                    banner.glow_class = params[18];
+                    banner.sort_order = params[19];
+                    banner.is_active = params[20];
+                    banner.start_date = params[21] || null;
+                    banner.end_date = params[22] || null;
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+
+            if (sqlUpper.startsWith('DELETE FROM HIGHLIGHTS_BANNERS')) {
+                const id = params[0];
+                const initialLength = memDb.highlights_banners.length;
+                memDb.highlights_banners = memDb.highlights_banners.filter(b => b.id != id);
+                return { affectedRows: initialLength - memDb.highlights_banners.length };
+            }
+
+            if (sqlUpper.startsWith('UPDATE HIGHLIGHTS_BANNERS SET IS_ACTIVE')) {
+                const banner = memDb.highlights_banners.find(b => b.id == params[1]);
+                if (banner) {
+                    banner.is_active = params[0];
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+
             return [];
         }
     }
@@ -281,6 +455,36 @@ async function initDatabase() {
             )
         `);
 
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS highlights_banners (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                badge_text VARCHAR(255) NOT NULL,
+                badge_class VARCHAR(100) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                subtitle TEXT NOT NULL,
+                btn_primary_text VARCHAR(255),
+                btn_primary_link VARCHAR(255),
+                btn_secondary_text VARCHAR(255),
+                btn_secondary_link VARCHAR(255),
+                stat_1_number VARCHAR(100),
+                stat_1_label VARCHAR(100),
+                stat_2_number VARCHAR(100),
+                stat_2_label VARCHAR(100),
+                stat_3_number VARCHAR(100),
+                stat_3_label VARCHAR(100),
+                image_path VARCHAR(255) NOT NULL,
+                floating_icon VARCHAR(10),
+                floating_title VARCHAR(255),
+                floating_desc VARCHAR(255),
+                glow_class VARCHAR(100) NOT NULL,
+                sort_order INT DEFAULT 0,
+                is_active TINYINT DEFAULT 1,
+                start_date DATETIME NULL,
+                end_date DATETIME NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Run migrations/ALTER commands to update existing DB if tables already existed
         try {
             await pool.query("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'");
@@ -288,6 +492,15 @@ async function initDatabase() {
         try {
             await pool.query("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(10) DEFAULT '🇰🇪'");
         } catch (e) { /* ignore duplicate column */ }
+        try {
+            await pool.query("ALTER TABLE highlights_banners ADD COLUMN is_active TINYINT DEFAULT 1");
+        } catch (e) { /* ignore */ }
+        try {
+            await pool.query("ALTER TABLE highlights_banners ADD COLUMN start_date DATETIME NULL");
+        } catch (e) { /* ignore */ }
+        try {
+            await pool.query("ALTER TABLE highlights_banners ADD COLUMN end_date DATETIME NULL");
+        } catch (e) { /* ignore */ }
 
         // Check if admin user exists, if not seed default
         const [rows] = await pool.query('SELECT * FROM admin_users WHERE username = ?', [defaultUsername]);
@@ -297,6 +510,47 @@ async function initDatabase() {
                 defaultPasswordHash
             ]);
             console.log(`👤 Seeded default admin user: "${defaultUsername}" / "${defaultPassword}"`);
+        }
+
+        // Check if highlights_banners is empty, if so seed defaults
+        const [bannerRows] = await pool.query('SELECT COUNT(*) as count FROM highlights_banners');
+        if (bannerRows[0].count === 0) {
+            const defaultBanners = [
+                [
+                    'Upcoming Event', 'event-badge', 'Junior Programmer <span>Bootcamp.</span>',
+                    "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design, building critical logical skills for the future.",
+                    'Enroll in Coding Program', '#contact', 'View Syllabus', '#curriculum',
+                    'June 15', 'Start Date', 'Ages 8-18', 'Target Groups', 'Hands-on', 'Project Based',
+                    'assets/images/upcoming_coder.png', '💻', 'Python & Web', 'Weekend Workshops', 'glow-purple', 1, 1, null, null
+                ],
+                [
+                    'Outstanding Achievement', 'success-badge', 'Outstanding IGCSE <span>Triumphs.</span>',
+                    'We celebrate academic excellence! Our IGCSE student Esther W. scored an outstanding 98% in Mathematics under customized Genius Minds personal tutoring.',
+                    'Request Personal Tutor', '#contact', 'Our Success Stories', '#about',
+                    '98%', 'Highest Score', 'A+ Grade', 'Average Performance', '1-on-1', 'Personalized Care',
+                    'assets/images/achievement_trophy.png', '🏆', 'IGCSE Maths', 'Esther W. 98%', 'glow-green', 2, 1, null, null
+                ],
+                [
+                    'Enrollment Announcement', 'announce-badge', 'Term 3 Admissions <span>Now Open.</span>',
+                    'Enrollments for Online, Home-based, and Physical center tutoring classes are open. We support IGCSE, CBE/CBC, and the 8-4-4 systems. Secure your child\'s success today!',
+                    'Book a Free Session', '#contact', 'Explore Formats', '#services',
+                    'Active', 'Admissions Status', 'Online/Home', 'Flexible Formats', 'Affordable', 'Flexible Payments',
+                    'assets/images/announcement_bell.png', '🔔', 'Admissions Open', 'CBE, IGCSE & 8-4-4', 'glow-orange', 3, 1, null, null
+                ]
+            ];
+
+            for (const banner of defaultBanners) {
+                await pool.query(`
+                    INSERT INTO highlights_banners (
+                        badge_text, badge_class, title, subtitle,
+                        btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                        stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                        image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order,
+                        is_active, start_date, end_date
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, banner);
+            }
+            console.log('✨ Seeded default highlights banners in MySQL.');
         }
 
         dbMode = 'mysql';
@@ -759,6 +1013,280 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     }
 });
 
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Multer upload setup using memory storage
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ==========================================
+// HIGHLIGHTS BANNER APIS
+// ==========================================
+
+// 1. Get Public Highlights Banners (Filtered by visibility and scheduled times)
+app.get('/api/banners', async (req, res) => {
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const now = new Date();
+        const activeBanners = banners
+            .filter(b => {
+                // Check active status (default to 1 if not set)
+                const isActive = b.is_active === undefined || b.is_active == 1;
+                // Check start date (if set, now must be >= start_date)
+                const hasStarted = !b.start_date || now >= new Date(b.start_date);
+                // Check end date (if set, now must be <= end_date)
+                const hasEnded = !b.end_date || now <= new Date(b.end_date);
+                
+                return isActive && hasStarted && hasEnded;
+            })
+            .sort((a, b) => a.sort_order - b.sort_order);
+            
+        res.json(activeBanners);
+    } catch (err) {
+        console.error('Error fetching highlights banners:', err);
+        res.status(500).json({ error: 'Failed to retrieve banners.' });
+    }
+});
+
+// 2. Get Admin Banners
+app.get('/api/admin/banners', requireAdmin, async (req, res) => {
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners ORDER BY sort_order ASC');
+        res.json(banners);
+    } catch (err) {
+        console.error('Error fetching admin highlights banners:', err);
+        res.status(500).json({ error: 'Failed to retrieve banners.' });
+    }
+});
+
+// 3. Create Highlights Banner
+app.post('/api/admin/banners', requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const {
+            badge_text,
+            badge_class,
+            title,
+            subtitle,
+            btn_primary_text,
+            btn_primary_link,
+            btn_secondary_text,
+            btn_secondary_link,
+            stat_1_number,
+            stat_1_label,
+            stat_2_number,
+            stat_2_label,
+            stat_3_number,
+            stat_3_label,
+            floating_icon,
+            floating_title,
+            floating_desc,
+            glow_class,
+            sort_order,
+            is_active,
+            start_date,
+            end_date
+        } = req.body;
+
+        if (!badge_text || !badge_class || !title || !subtitle || !glow_class) {
+            return res.status(400).json({ error: 'Missing required banner text fields.' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'Banner image is required.' });
+        }
+
+        // Process image using sharp: crop/resize to 800x800 cover fit, compress to WebP
+        const filename = `banner_${Date.now()}.webp`;
+        const filepath = path.join(uploadsDir, filename);
+
+        await sharp(req.file.buffer)
+            .resize(800, 800, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .webp({ quality: 85 })
+            .toFile(filepath);
+
+        const image_path = `uploads/${filename}`;
+
+        // Insert into database
+        await db.query(`
+            INSERT INTO highlights_banners (
+                badge_text, badge_class, title, subtitle,
+                btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order,
+                is_active, start_date, end_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            badge_text, badge_class, title, subtitle,
+            btn_primary_text || '', btn_primary_link || '', btn_secondary_text || '', btn_secondary_link || '',
+            stat_1_number || '', stat_1_label || '', stat_2_number || '', stat_2_label || '', stat_3_number || '', stat_3_label || '',
+            image_path, floating_icon || '', floating_title || '', floating_desc || '', glow_class, parseInt(sort_order) || 0,
+            is_active !== undefined ? parseInt(is_active) : 1,
+            start_date ? new Date(start_date) : null,
+            end_date ? new Date(end_date) : null
+        ]);
+
+        res.json({ success: true, image_path });
+    } catch (err) {
+        console.error('Error creating banner:', err);
+        res.status(500).json({ error: 'Failed to create banner: ' + err.message });
+    }
+});
+
+// 4. Update Highlights Banner
+app.put('/api/admin/banners/:id', requireAdmin, upload.single('image'), async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        // Find existing banner
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+        
+        if (!existingBanner) {
+            return res.status(404).json({ error: 'Banner not found.' });
+        }
+
+        const {
+            badge_text,
+            badge_class,
+            title,
+            subtitle,
+            btn_primary_text,
+            btn_primary_link,
+            btn_secondary_text,
+            btn_secondary_link,
+            stat_1_number,
+            stat_1_label,
+            stat_2_number,
+            stat_2_label,
+            stat_3_number,
+            stat_3_label,
+            floating_icon,
+            floating_title,
+            floating_desc,
+            glow_class,
+            sort_order,
+            is_active,
+            start_date,
+            end_date
+        } = req.body;
+
+        if (!badge_text || !badge_class || !title || !subtitle || !glow_class) {
+            return res.status(400).json({ error: 'Missing required banner text fields.' });
+        }
+
+        let image_path = existingBanner.image_path;
+
+        // If new file is uploaded
+        if (req.file) {
+            // Process and save new image
+            const filename = `banner_${Date.now()}.webp`;
+            const filepath = path.join(uploadsDir, filename);
+
+            await sharp(req.file.buffer)
+                .resize(800, 800, {
+                    fit: 'cover',
+                    position: 'center'
+                })
+                .webp({ quality: 85 })
+                .toFile(filepath);
+
+            image_path = `uploads/${filename}`;
+
+            // Delete old image file if it's in the uploads directory
+            if (existingBanner.image_path.startsWith('uploads/')) {
+                const oldFilepath = path.join(__dirname, existingBanner.image_path);
+                if (fs.existsSync(oldFilepath)) {
+                    fs.unlinkSync(oldFilepath);
+                }
+            }
+        }
+
+        // Run query to update
+        await db.query(`
+            UPDATE highlights_banners SET
+                badge_text = ?, badge_class = ?, title = ?, subtitle = ?,
+                btn_primary_text = ?, btn_primary_link = ?, btn_secondary_text = ?, btn_secondary_link = ?,
+                stat_1_number = ?, stat_1_label = ?, stat_2_number = ?, stat_2_label = ?, stat_3_number = ?, stat_3_label = ?,
+                image_path = ?, floating_icon = ?, floating_title = ?, floating_desc = ?, glow_class = ?, sort_order = ?,
+                is_active = ?, start_date = ?, end_date = ?
+            WHERE id = ?
+        `, [
+            badge_text, badge_class, title, subtitle,
+            btn_primary_text || '', btn_primary_link || '', btn_secondary_text || '', btn_secondary_link || '',
+            stat_1_number || '', stat_1_label || '', stat_2_number || '', stat_2_label || '', stat_3_number || '', stat_3_label || '',
+            image_path, floating_icon || '', floating_title || '', floating_desc || '', glow_class, parseInt(sort_order) || 0,
+            is_active !== undefined ? parseInt(is_active) : 1,
+            start_date ? new Date(start_date) : null,
+            end_date ? new Date(end_date) : null,
+            bannerId
+        ]);
+
+        res.json({ success: true, image_path });
+    } catch (err) {
+        console.error('Error updating banner:', err);
+        res.status(500).json({ error: 'Failed to update banner: ' + err.message });
+    }
+});
+
+// 5. Delete Highlights Banner
+app.delete('/api/admin/banners/:id', requireAdmin, async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+        
+        if (!existingBanner) {
+            return res.status(404).json({ error: 'Banner not found.' });
+        }
+
+        // Delete image file if it's in the uploads directory
+        if (existingBanner.image_path.startsWith('uploads/')) {
+            const oldFilepath = path.join(__dirname, existingBanner.image_path);
+            if (fs.existsSync(oldFilepath)) {
+                fs.unlinkSync(oldFilepath);
+            }
+        }
+
+        // Delete from database
+        await db.query('DELETE FROM highlights_banners WHERE id = ?', [bannerId]);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting banner:', err);
+        res.status(500).json({ error: 'Failed to delete banner.' });
+    }
+});
+
+// 6. Toggle Banner Visibility (Show/Hide) — quick action without full form submit
+app.patch('/api/admin/banners/:id/toggle', requireAdmin, async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+
+        if (!existingBanner) {
+            return res.status(404).json({ error: 'Banner not found.' });
+        }
+
+        const newStatus = existingBanner.is_active == 1 ? 0 : 1;
+
+        await db.query(
+            'UPDATE highlights_banners SET is_active = ? WHERE id = ?',
+            [newStatus, bannerId]
+        );
+
+        res.json({ success: true, is_active: newStatus });
+    } catch (err) {
+        console.error('Error toggling banner visibility:', err);
+        res.status(500).json({ error: 'Failed to toggle banner visibility.' });
+    }
+});
+
 // Administrative User Management APIs
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
@@ -850,6 +1378,7 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
 
 // Route for static admin files (must be before the root static serving)
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Custom route to redirect users directly to admin panel login if not logged in
 app.get('/admin', (req, res) => {

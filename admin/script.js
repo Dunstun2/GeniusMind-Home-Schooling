@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadAnalytics();
             } else if (tabId === 'users') {
                 loadAdminUsers();
+            } else if (tabId === 'banners') {
+                loadBanners();
             }
         });
     });
@@ -922,6 +924,370 @@ document.addEventListener('DOMContentLoaded', () => {
             minute: '2-digit', 
             second: '2-digit', 
             hour12: true 
+        });
+    }
+
+    // ==========================================
+    // HIGHLIGHTS BANNERS CRUD WORKFLOWS
+    // ==========================================
+    const bannerModal = document.getElementById('bannerModal');
+    const bannerForm = document.getElementById('bannerForm');
+    const bannerModalTitle = document.getElementById('bannerModalTitle');
+    const addBannerBtn = document.getElementById('addBannerBtn');
+    const bannerModalCloseBtn = document.getElementById('bannerModalCloseBtn');
+    const bannerCancelBtn = document.getElementById('bannerCancelBtn');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageHelp = document.getElementById('imageHelp');
+    const imageInput = document.getElementById('image');
+
+    let allBanners = [];
+
+    if (addBannerBtn) {
+        addBannerBtn.addEventListener('click', () => {
+            openBannerModal();
+        });
+    }
+
+    if (bannerModalCloseBtn) {
+        bannerModalCloseBtn.addEventListener('click', () => {
+            closeBannerModal();
+        });
+    }
+
+    if (bannerCancelBtn) {
+        bannerCancelBtn.addEventListener('click', () => {
+            closeBannerModal();
+        });
+    }
+
+    // Modal backdrop click
+    window.addEventListener('click', (e) => {
+        if (e.target === bannerModal) {
+            closeBannerModal();
+        }
+    });
+
+    function formatDateForLocalInput(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    function openBannerModal(banner = null) {
+        bannerForm.reset();
+        
+        if (banner) {
+            // Edit mode
+            bannerModalTitle.textContent = 'Edit Highlights Banner';
+            document.getElementById('bannerId').value = banner.id;
+            document.getElementById('badge_text').value = banner.badge_text || '';
+            document.getElementById('badge_class').value = banner.badge_class || 'event-badge';
+            document.getElementById('title').value = banner.title || '';
+            document.getElementById('subtitle').value = banner.subtitle || '';
+            document.getElementById('btn_primary_text').value = banner.btn_primary_text || '';
+            document.getElementById('btn_primary_link').value = banner.btn_primary_link || '';
+            document.getElementById('btn_secondary_text').value = banner.btn_secondary_text || '';
+            document.getElementById('btn_secondary_link').value = banner.btn_secondary_link || '';
+            document.getElementById('stat_1_number').value = banner.stat_1_number || '';
+            document.getElementById('stat_1_label').value = banner.stat_1_label || '';
+            document.getElementById('stat_2_number').value = banner.stat_2_number || '';
+            document.getElementById('stat_2_label').value = banner.stat_2_label || '';
+            document.getElementById('stat_3_number').value = banner.stat_3_number || '';
+            document.getElementById('stat_3_label').value = banner.stat_3_label || '';
+            document.getElementById('floating_icon').value = banner.floating_icon || '';
+            document.getElementById('floating_title').value = banner.floating_title || '';
+            document.getElementById('floating_desc').value = banner.floating_desc || '';
+            document.getElementById('glow_class').value = banner.glow_class || 'glow-purple';
+            document.getElementById('sort_order').value = banner.sort_order || 0;
+            document.getElementById('is_active').value = banner.is_active !== undefined ? banner.is_active : 1;
+            document.getElementById('start_date').value = formatDateForLocalInput(banner.start_date);
+            document.getElementById('end_date').value = formatDateForLocalInput(banner.end_date);
+            
+            imageInput.required = false;
+            imageHelp.textContent = 'Leave empty to keep current image.';
+            
+            if (banner.image_path) {
+                imagePreview.src = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
+                imagePreviewContainer.style.display = 'block';
+            } else {
+                imagePreviewContainer.style.display = 'none';
+            }
+        } else {
+            // Create mode
+            bannerModalTitle.textContent = 'Add Highlights Banner';
+            document.getElementById('bannerId').value = '';
+            document.getElementById('is_active').value = 1;
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+            imageInput.required = true;
+            imageHelp.textContent = 'Required. Image will be auto-processed to WebP format.';
+            imagePreviewContainer.style.display = 'none';
+        }
+        
+        bannerModal.classList.add('active');
+    }
+
+    function closeBannerModal() {
+        bannerModal.classList.remove('active');
+        bannerForm.reset();
+    }
+
+    // Handle Form Submit
+    if (bannerForm) {
+        bannerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bannerId = document.getElementById('bannerId').value;
+            const submitBtn = document.getElementById('bannerSubmitBtn');
+            const isEdit = !!bannerId;
+            
+            const url = isEdit ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = isEdit ? 'Updating Banner...' : 'Creating Banner...';
+            
+            try {
+                const formData = new FormData(bannerForm);
+                
+                // If it is PUT, standard method override or send as POST with custom headers is not needed since express parses it,
+                // but let's send it as a direct PUT/POST fetch.
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert(isEdit ? 'Banner updated successfully.' : 'New banner created successfully.');
+                    closeBannerModal();
+                    loadBanners();
+                } else {
+                    throw new Error(result.error || 'Failed to save banner.');
+                }
+            } catch (err) {
+                alert('Error saving banner: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Banner';
+            }
+        });
+    }
+
+    // Fetch and Load Banners
+    async function loadBanners() {
+        const grid = document.getElementById('bannersGrid');
+        if (!grid) return;
+        
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading highlights banners...</div>';
+        
+        try {
+            const response = await fetch('/api/admin/banners');
+            if (response.status === 401) return window.location.href = '/admin/login.html';
+            
+            allBanners = await response.json();
+            renderBannersGrid(allBanners);
+        } catch (err) {
+            console.error('Error fetching admin banners:', err);
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;">Failed to load banners. Please try again.</div>';
+        }
+    }
+    window.loadBanners = loadBanners; // expose globally if needed
+
+    function renderBannersGrid(banners) {
+        const grid = document.getElementById('bannersGrid');
+        if (!grid) return;
+        
+        grid.innerHTML = '';
+        
+        if (banners.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted);"><span style="font-size: 40px; display: block; margin-bottom: 15px;">🖼️</span>No banners added yet. Click "Add New Banner" to get started.</div>';
+            return;
+        }
+        
+        banners.forEach(banner => {
+            const card = document.createElement('div');
+            card.className = 'banner-card';
+            
+            // Build stats list inside the card if present
+            let statsHtml = '';
+            if (banner.stat_1_number || banner.stat_2_number || banner.stat_3_number) {
+                statsHtml += '<div class="banner-card-stats">';
+                if (banner.stat_1_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_1_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_1_label || '')}</span>
+                        </div>
+                    `;
+                }
+                if (banner.stat_2_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_2_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_2_label || '')}</span>
+                        </div>
+                    `;
+                }
+                if (banner.stat_3_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_3_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_3_label || '')}</span>
+                        </div>
+                    `;
+                }
+                statsHtml += '</div>';
+            }
+
+            const imgPath = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
+
+            // Compute scheduling details
+            const now = new Date();
+            let schedLabel = 'Live';
+            let schedClass = 'completed';
+            
+            const isActive = banner.is_active === undefined || banner.is_active == 1;
+            
+            if (!isActive) {
+                schedLabel = 'Inactive';
+                schedClass = 'cancelled';
+            } else {
+                const startDate = banner.start_date ? new Date(banner.start_date) : null;
+                const endDate = banner.end_date ? new Date(banner.end_date) : null;
+                
+                if (startDate && now < startDate) {
+                    schedLabel = 'Scheduled';
+                    schedClass = 'pending';
+                } else if (endDate && now > endDate) {
+                    schedLabel = 'Expired';
+                    schedClass = 'cancelled';
+                }
+            }
+
+            let scheduleRangeHtml = '';
+            if (banner.start_date || banner.end_date) {
+                const startStr = banner.start_date ? new Date(banner.start_date).toLocaleString() : 'Immediate';
+                const endStr = banner.end_date ? new Date(banner.end_date).toLocaleString() : 'Indefinite';
+                scheduleRangeHtml = `
+                    <div class="banner-card-schedule" style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 6px; border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 2px;">
+                        <div><strong>Start:</strong> ${escapeHTML(startStr)}</div>
+                        <div><strong>End:</strong> ${escapeHTML(endStr)}</div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="banner-card-img-wrapper ${!isActive ? 'banner-card-dim' : ''}">
+                    <img src="${imgPath}" alt="${escapeHTML(banner.badge_text)}" class="banner-card-img">
+                    <span class="status-badge ${banner.badge_class} banner-card-badge">${escapeHTML(banner.badge_text)}</span>
+                    <span class="banner-card-order">Order: ${banner.sort_order}</span>
+                    <div class="banner-card-glow"></div>
+                </div>
+                <div class="banner-card-body">
+                    <div class="banner-card-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="status-badge ${schedClass}" style="font-size: 12px; font-weight: 700; letter-spacing: 0.3px;">${isActive ? '🟢' : '🔴'} ${schedLabel}</span>
+                        <button class="toggle-banner-btn" data-id="${banner.id}" data-active="${banner.is_active}" title="${isActive ? 'Click to Hide this banner on the website' : 'Click to Show this banner on the website'}" style="
+                            background: ${isActive ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)'};
+                            border: 1px solid ${isActive ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};
+                            color: ${isActive ? '#ef4444' : '#10b981'};
+                            border-radius: 20px;
+                            padding: 4px 12px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            white-space: nowrap;
+                        ">${isActive ? '🙈 Hide' : '👁 Show'}</button>
+                    </div>
+                    <h4 class="banner-card-title">${banner.title}</h4>
+                    <p class="banner-card-subtitle">${escapeHTML(banner.subtitle)}</p>
+                    ${scheduleRangeHtml}
+                    ${statsHtml}
+                    <div class="banner-card-actions">
+                        <button class="btn btn-view-log edit-banner-btn" data-id="${banner.id}">✏️ Edit</button>
+                        <button class="btn btn-danger delete-banner-btn" data-id="${banner.id}">🗑️ Delete</button>
+                    </div>
+                </div>
+            `;
+            
+            grid.appendChild(card);
+        });
+
+        // Add Event Listeners for actions
+        grid.querySelectorAll('.edit-banner-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const banner = allBanners.find(b => b.id == id);
+                if (banner) {
+                    openBannerModal(banner);
+                }
+            });
+        });
+
+        // Toggle Show/Hide quick action
+        grid.querySelectorAll('.toggle-banner-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const isCurrentlyActive = btn.getAttribute('data-active') == 1;
+                const label = isCurrentlyActive ? 'hide' : 'show';
+
+                btn.disabled = true;
+                btn.textContent = '⏳ Updating...';
+
+                try {
+                    const response = await fetch(`/api/admin/banners/${id}/toggle`, { method: 'PATCH' });
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        // Update the local allBanners state and re-render
+                        const bannerIndex = allBanners.findIndex(b => b.id == id);
+                        if (bannerIndex !== -1) {
+                            allBanners[bannerIndex].is_active = result.is_active;
+                        }
+                        renderBannersGrid(allBanners);
+                    } else {
+                        alert('Error: ' + (result.error || 'Could not toggle visibility.'));
+                        btn.disabled = false;
+                        btn.textContent = isCurrentlyActive ? '🙈 Hide' : '👁 Show';
+                    }
+                } catch (err) {
+                    alert('Network error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = isCurrentlyActive ? '🙈 Hide' : '👁 Show';
+                }
+            });
+        });
+
+        grid.querySelectorAll('.delete-banner-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                if (confirm('Are you sure you want to delete this highlights banner? This action cannot be undone.')) {
+                    try {
+                        const response = await fetch(`/api/admin/banners/${id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            alert('Banner deleted successfully.');
+                            loadBanners();
+                        } else {
+                            throw new Error(result.error || 'Failed to delete banner.');
+                        }
+                    } catch (err) {
+                        alert('Error deleting banner: ' + err.message);
+                    }
+                }
+            });
         });
     }
 });

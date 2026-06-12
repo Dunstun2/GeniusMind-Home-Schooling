@@ -36,6 +36,9 @@
                 <a href="#users" class="nav-item" data-tab="users">
                     <span class="nav-icon">👤</span> Admin Accounts
                 </a>
+                <a href="#banners" class="nav-item" data-tab="banners">
+                    <span class="nav-icon">🖼️</span> Banners
+                </a>
             </nav>
             
             <div class="sidebar-footer">
@@ -387,6 +390,22 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Section 6: Highlights Banners Management -->
+                <section id="tab-banners" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Highlights Banners</h3>
+                            <p class="section-subtitle">Add, edit, delete, and re-order the slides displayed in the highlights section of the main landing page.</p>
+                        </div>
+                        <button id="addBannerBtn" class="btn btn-primary">➕ Add New Banner</button>
+                    </div>
+
+                    <!-- Grid of existing banners -->
+                    <div class="banners-grid" id="bannersGrid">
+                        <!-- Dynamic banner cards will be loaded here -->
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -400,6 +419,170 @@
             </div>
             <div class="modal-body" id="modalContent">
                 <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Banner Add/Edit Modal overlay -->
+    <div class="modal" id="bannerModal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="bannerModalTitle">Add Highlights Banner</h3>
+                <button class="modal-close" id="bannerModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="bannerForm" enctype="multipart/form-data">
+                    <input type="hidden" id="bannerId" name="id">
+                    
+                    <!-- Basic Information -->
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="badge_text">Badge Text *</label>
+                            <input type="text" id="badge_text" name="badge_text" required placeholder="e.g. Upcoming Event, Success story">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="badge_class">Badge Theme Class *</label>
+                            <select id="badge_class" name="badge_class" required>
+                                <option value="event-badge">Indigo (Event Theme)</option>
+                                <option value="success-badge">Green (Success Theme)</option>
+                                <option value="announce-badge">Orange (Announcement Theme)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="title">Title * (Use &lt;span&gt;...&lt;/span&gt; for highlighted text)</label>
+                        <input type="text" id="title" name="title" required placeholder="e.g. Junior Programmer &lt;span&gt;Bootcamp.&lt;/span&gt;">
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="subtitle">Subtitle Description *</label>
+                        <textarea id="subtitle" name="subtitle" rows="3" required placeholder="Describe the event, announcement or achievement..."></textarea>
+                    </div>
+
+                    <!-- Call To Action Buttons -->
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="btn_primary_text">Primary Button Text</label>
+                            <input type="text" id="btn_primary_text" name="btn_primary_text" placeholder="e.g. Enroll Now">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="btn_primary_link">Primary Button Link</label>
+                            <input type="text" id="btn_primary_link" name="btn_primary_link" placeholder="e.g. #contact">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="btn_secondary_text">Secondary Button Text</label>
+                            <input type="text" id="btn_secondary_text" name="btn_secondary_text" placeholder="e.g. View Syllabus">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="btn_secondary_link">Secondary Button Link</label>
+                            <input type="text" id="btn_secondary_link" name="btn_secondary_link" placeholder="e.g. #curriculum">
+                        </div>
+                    </div>
+
+                    <!-- Stats Fields (Max 3) -->
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_1_number">Stat 1 Value</label>
+                            <input type="text" id="stat_1_number" name="stat_1_number" placeholder="e.g. June 15 or 98%">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_1_label">Stat 1 Label</label>
+                            <input type="text" id="stat_1_label" name="stat_1_label" placeholder="e.g. Start Date or Highest Score">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_2_number">Stat 2 Value</label>
+                            <input type="text" id="stat_2_number" name="stat_2_number" placeholder="e.g. Ages 8-18">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_2_label">Stat 2 Label</label>
+                            <input type="text" id="stat_2_label" name="stat_2_label" placeholder="e.g. Target Groups">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_3_number">Stat 3 Value</label>
+                            <input type="text" id="stat_3_number" name="stat_3_number" placeholder="e.g. Hands-on">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_3_label">Stat 3 Label</label>
+                            <input type="text" id="stat_3_label" name="stat_3_label" placeholder="e.g. Project Based">
+                        </div>
+                    </div>
+
+                    <!-- Floating Badge & Image -->
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="floating_icon">Floating Icon (Emoji)</label>
+                            <input type="text" id="floating_icon" name="floating_icon" placeholder="e.g. 💻, 🏆, 🔔">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="floating_title">Floating Title</label>
+                            <input type="text" id="floating_title" name="floating_title" placeholder="e.g. Python & Web">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="floating_desc">Floating Desc</label>
+                            <input type="text" id="floating_desc" name="floating_desc" placeholder="e.g. Weekend Workshops">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="glow_class">Glow & Theme Class *</label>
+                            <select id="glow_class" name="glow_class" required>
+                                <option value="glow-purple">Purple Glow</option>
+                                <option value="glow-green">Green Glow</option>
+                                <option value="glow-orange">Orange Glow</option>
+                            </select>
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="sort_order">Sort/Display Order *</label>
+                            <input type="number" id="sort_order" name="sort_order" required value="0" min="0">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="is_active">Status *</label>
+                            <select id="is_active" name="is_active" required>
+                                <option value="1">Show (Active)</option>
+                                <option value="0">Hide (Inactive)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="start_date">Schedule Start Date & Time</label>
+                            <input type="datetime-local" id="start_date" name="start_date">
+                            <p class="file-help-text">Leave blank to display immediately.</p>
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="end_date">Schedule End Date & Time</label>
+                            <input type="datetime-local" id="end_date" name="end_date">
+                            <p class="file-help-text">Leave blank to display indefinitely.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="image">Banner Image (Auto-processed: cropped, resized, compressed to WebP)</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <p class="file-help-text" id="imageHelp">Please select an image file. Leave empty when editing to keep current image.</p>
+                        <div id="imagePreviewContainer" style="display: none; margin-top: 10px;">
+                            <span class="preview-label">Current Image Preview:</span>
+                            <img id="imagePreview" src="" alt="Banner Preview" style="max-height: 120px; border-radius: 8px; margin-top: 5px;">
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="bannerCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="bannerSubmitBtn">Save Banner</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
