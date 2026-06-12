@@ -264,6 +264,38 @@ const db = {
                 return { affectedRows: 0 };
             }
 
+            if (sqlUpper.startsWith('INSERT INTO BOOKINGS')) {
+                const id = memDb.bookings.length + 1;
+                const record = {
+                    id,
+                    name: params[0],
+                    email: params[1],
+                    phone: params[2],
+                    service: params[3],
+                    message: params[4] || '',
+                    status: 'pending',
+                    created_at: new Date()
+                };
+                memDb.bookings.push(record);
+                return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('INSERT INTO EMAIL_LOGS')) {
+                const id = memDb.email_logs.length + 1;
+                const record = {
+                    id,
+                    booking_id: params[0],
+                    recipient: params[1],
+                    subject: params[2],
+                    body: params[3],
+                    status: params[4],
+                    error_message: params[5] || null,
+                    created_at: new Date()
+                };
+                memDb.email_logs.push(record);
+                return { insertId: id };
+            }
+
             if (sqlUpper.startsWith('SELECT * FROM EMAIL_LOGS ORDER BY CREATED_AT DESC')) {
                 return [...memDb.email_logs].sort((a, b) => b.created_at - a.created_at);
             }

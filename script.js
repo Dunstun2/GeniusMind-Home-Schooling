@@ -341,4 +341,31 @@ document.addEventListener('DOMContentLoaded', () => {
             startAutoPlay();
         }
     }
+
+    // FAQ Accordion Toggle
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    faqQuestions.forEach(question => {
+        question.addEventListener('click', () => {
+            const faqItem = question.parentElement;
+            const answer = question.nextElementSibling;
+            const toggleIcon = question.querySelector('.faq-toggle-icon');
+            
+            const isActive = faqItem.classList.contains('active');
+            
+            // Close other items for a clean single-open accordion feel
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.classList.remove('active');
+                const itemAnswer = item.querySelector('.faq-answer');
+                if (itemAnswer) itemAnswer.style.maxHeight = null;
+                const itemIcon = item.querySelector('.faq-toggle-icon');
+                if (itemIcon) itemIcon.textContent = '+';
+            });
+            
+            if (!isActive) {
+                faqItem.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+                toggleIcon.textContent = '−';
+            }
+        });
+    });
 });
