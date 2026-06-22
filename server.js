@@ -40,7 +40,26 @@ const upload = multer({
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: true, credentials: true })); // Allow all origins with credentials
+const allowedOrigins = [
+    'https://www.geniusminds.website',
+    'https://geniusminds.website',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, origin || true);
+        } else {
+            callback(null, true); // Allow all other origins as well (fallback to original behavior)
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200 // For legacy browser support
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
