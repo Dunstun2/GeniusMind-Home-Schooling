@@ -1,16 +1,39 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+// WhatsApp Service - Graceful stub when whatsapp-web.js is unavailable (e.g. cPanel shared hosting)
+// On environments with Puppeteer/Chromium support, install whatsapp-web.js to enable full functionality.
+
+let Client, LocalAuth;
+let whatsappAvailable = false;
+
+try {
+    const wwebjs = require('whatsapp-web.js');
+    Client = wwebjs.Client;
+    LocalAuth = wwebjs.LocalAuth;
+    whatsappAvailable = true;
+} catch (e) {
+    console.warn('⚠️ whatsapp-web.js not available (requires Puppeteer/Chromium). WhatsApp notifications are disabled.');
+}
+
 const qrcodeTerminal = require('qrcode-terminal');
 const qrcode = require('qrcode');
 
 class WhatsAppService {
     constructor() {
         this.client = null;
-        this.status = 'disconnected'; // 'disconnected', 'authenticating', 'ready', 'error'
+        this.status = 'disconnected'; // 'disconnected', 'authenticating', 'ready', 'error', 'unavailable'
         this.qrCodeDataUrl = null;
         this.isDisconnecting = false;
+
+        if (!whatsappAvailable) {
+            this.status = 'unavailable';
+        }
     }
 
     initialize() {
+        if (!whatsappAvailable) {
+            console.warn('⚠️ WhatsApp unavailable: whatsapp-web.js not installed.');
+            return;
+        }
+
         console.log('📱 Initializing WhatsApp Web Client...');
         
         this.client = new Client({
@@ -86,6 +109,11 @@ class WhatsAppService {
     }
 
     async sendMessage(phone, message) {
+        if (!whatsappAvailable || this.status === 'unavailable') {
+            console.log(`📱 [WhatsApp disabled] Would have sent to ${phone}: ${message.substring(0, 80)}...`);
+            return false;
+        }
+
         if (this.status !== 'ready' || !this.client) {
             console.warn(`⚠️ Cannot send WhatsApp message to ${phone}: Client not ready. Status: ${this.status}`);
             return false;
@@ -105,42 +133,42 @@ class WhatsAppService {
     }
 
     async disconnect() {
-        if (this.client) {
-            console.log('📱 Disconnecting WhatsApp Client...');
-            this.isDisconnecting = true;
-            this.status = 'disconnected';
-            this.qrCodeDataUrl = null;
-            
-            try {
-                await this.client.logout();
-                console.log('✅ WhatsApp Client logged out successfully.');
-            } catch (err) {
-                console.error('❌ Error logging out WhatsApp Client:', err);
-            }
-            
-            try {
-                await this.client.destroy();
-                console.log('✅ WhatsApp Client Puppeteer browser destroyed.');
-            } catch (destroyErr) {
-                console.error('❌ Error destroying WhatsApp Client:', destroyErr);
-            }
-            
-            // Force clean up of session files to prevent stale logins
-            try {
-                const fs = require('fs');
-                const path = require('path');
-                const sessionPath = path.join(__dirname, '..', '.wwebjs_auth');
-                if (fs.existsSync(sessionPath)) {
-                    fs.rmSync(sessionPath, { recursive: true, force: true });
-                    console.log('✅ Cleaned up WhatsApp session directory.');
-                }
-            } catch (fsErr) {
-                console.error('❌ Failed to delete session directory:', fsErr);
-            }
+        if (!whatsappAvailable || !this.client) return;
 
-            this.isDisconnecting = false;
-            this.initialize();
+        console.log('📱 Disconnecting WhatsApp Client...');
+        this.isDisconnecting = true;
+        this.status = 'disconnected';
+        this.qrCodeDataUrl = null;
+        
+        try {
+            await this.client.logout();
+            console.log('✅ WhatsApp Client logged out successfully.');
+        } catch (err) {
+            console.error('❌ Error logging out WhatsApp Client:', err);
         }
+        
+        try {
+            await this.client.destroy();
+            console.log('✅ WhatsApp Client Puppeteer browser destroyed.');
+        } catch (destroyErr) {
+            console.error('❌ Error destroying WhatsApp Client:', destroyErr);
+        }
+        
+        // Force clean up of session files to prevent stale logins
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const sessionPath = path.join(__dirname, '..', '.wwebjs_auth');
+            if (fs.existsSync(sessionPath)) {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                console.log('✅ Cleaned up WhatsApp session directory.');
+            }
+        } catch (fsErr) {
+            console.error('❌ Failed to delete session directory:', fsErr);
+        }
+
+        this.isDisconnecting = false;
+        this.initialize();
     }
 
     getStatus() {
