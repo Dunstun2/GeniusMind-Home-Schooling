@@ -17,6 +17,7 @@ build/
 
 # Sensitive environment files (never commit real secrets)
 .env
+.env.production
 .env.examble
 
 # Local data files
