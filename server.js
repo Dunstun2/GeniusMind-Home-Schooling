@@ -11,6 +11,18 @@ const cors = require('cors');
 require('dotenv').config({ override: true });
 const whatsappService = require('./utils/whatsappService');
 
+let sqlite3 = null;
+let sqliteOpen = null;
+let sqliteAvailable = false;
+
+try {
+    sqlite3 = require('sqlite3');
+    sqliteOpen = require('sqlite').open;
+    sqliteAvailable = true;
+} catch (e) {
+    console.warn('⚠️ SQLite local database driver not available (sqlite3/sqlite packages missing).');
+}
+
 // ==========================================
 // MULTER FILE UPLOAD CONFIGURATION
 // ==========================================
@@ -82,8 +94,9 @@ app.use(session({
 // ==========================================
 // DUAL-MODE DATABASE ADAPTER (SQLite & Memory)
 // ==========================================
-let dbMode = 'memory'; // 'mysql' or 'memory'
+let dbMode = 'memory'; // 'mysql', 'sqlite', or 'memory'
 let dbPool = null; // MySQL2 connection pool
+let dbConnection = null; // SQLite connection
 
 // In-Memory Database fallback data structures
 const memDb = {
@@ -117,6 +130,22 @@ const db = {
                 return rows;
             } else {
                 return { insertId: rows.insertId, affectedRows: rows.affectedRows };
+            }
+        } else if (dbMode === 'sqlite') {
+            const sqlUpper = sql.trim().toUpperCase();
+            const isSelect = sqlUpper.startsWith('SELECT');
+            
+            // Format ON DUPLICATE KEY UPDATE for SQLite
+            let sqlFormatted = sql;
+            if (sqlUpper.includes('ON DUPLICATE KEY UPDATE')) {
+                sqlFormatted = sql.replace('ON DUPLICATE KEY UPDATE', 'ON CONFLICT(session_key) DO UPDATE SET');
+            }
+
+            if (isSelect) {
+                return await dbConnection.all(sqlFormatted, params);
+            } else {
+                const result = await dbConnection.run(sqlFormatted, params);
+                return { insertId: result.lastID, affectedRows: result.changes };
             }
         } else {
             // Basic SQL parsing/routing to mock collections
@@ -301,147 +330,276 @@ const db = {
 
 // Initial database connection and tables creation
 async function initDatabase() {
-    try {
-        console.log('🔄 Connecting to MySQL database...');
+    const isProduction = process.env.NODE_ENV === 'production';
 
-        dbPool = await mysql.createPool({
-            host:     process.env.DB_HOST     || '127.0.0.1',
-            port:     parseInt(process.env.DB_PORT || '3306'),
-            user:     process.env.DB_USER     || 'root',
-            password: process.env.DB_PASSWORD || '',
-            database: process.env.DB_NAME     || 'genius_minds_db',
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0,
-            charset: 'utf8mb4'
-        });
+    if (isProduction) {
+        // ==========================================
+        // PRODUCTION DATABASE INIT: MySQL ONLY
+        // ==========================================
+        try {
+            console.log('🔄 [Production] Connecting to MySQL database...');
 
-        // Test connection
-        await dbPool.execute('SELECT 1');
+            dbPool = await mysql.createPool({
+                host:     process.env.DB_HOST     || '127.0.0.1',
+                port:     parseInt(process.env.DB_PORT || '3306'),
+                user:     process.env.DB_USER     || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: process.env.DB_NAME     || 'genius_minds_db',
+                waitForConnections: true,
+                connectionLimit: 10,
+                queueLimit: 0,
+                charset: 'utf8mb4'
+            });
 
-        // ── Create Tables ─────────────────────────────────────────────────────
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS bookings (
-                id              INT NOT NULL AUTO_INCREMENT,
-                name            VARCHAR(255) NOT NULL,
-                email           VARCHAR(255) NOT NULL,
-                phone           VARCHAR(50)  NOT NULL,
-                service         VARCHAR(255) NOT NULL,
-                message         TEXT,
-                tracking_token  VARCHAR(64)  DEFAULT NULL,
-                status          VARCHAR(50)  DEFAULT 'pending',
-                created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY idx_tracking_token (tracking_token)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            // Test connection
+            await dbPool.execute('SELECT 1');
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS booking_messages (
-                id              INT NOT NULL AUTO_INCREMENT,
-                booking_id      INT NOT NULL,
-                sender          VARCHAR(50)  NOT NULL,
-                message         TEXT         NOT NULL,
-                attachment_url  VARCHAR(500) DEFAULT NULL,
-                attachment_name VARCHAR(255) DEFAULT NULL,
-                created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            // Create MySQL Tables
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS bookings (
+                    id              INT NOT NULL AUTO_INCREMENT,
+                    name            VARCHAR(255) NOT NULL,
+                    email           VARCHAR(255) NOT NULL,
+                    phone           VARCHAR(50)  NOT NULL,
+                    service         VARCHAR(255) NOT NULL,
+                    message         TEXT,
+                    tracking_token  VARCHAR(64)  DEFAULT NULL,
+                    status          VARCHAR(50)  DEFAULT 'pending',
+                    created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY idx_tracking_token (tracking_token)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS email_logs (
-                id            INT NOT NULL AUTO_INCREMENT,
-                booking_id    INT          DEFAULT NULL,
-                recipient     VARCHAR(255) NOT NULL,
-                subject       VARCHAR(500) NOT NULL,
-                body          LONGTEXT,
-                status        VARCHAR(50)  NOT NULL,
-                error_message TEXT         DEFAULT NULL,
-                created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS booking_messages (
+                    id              INT NOT NULL AUTO_INCREMENT,
+                    booking_id      INT NOT NULL,
+                    sender          VARCHAR(50)  NOT NULL,
+                    message         TEXT         NOT NULL,
+                    attachment_url  VARCHAR(500) DEFAULT NULL,
+                    attachment_name VARCHAR(255) DEFAULT NULL,
+                    created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS analytics_sessions (
-                id           INT NOT NULL AUTO_INCREMENT,
-                session_key  VARCHAR(255) NOT NULL,
-                ip_address   VARCHAR(45)  DEFAULT NULL,
-                user_agent   TEXT,
-                browser      VARCHAR(100) DEFAULT NULL,
-                os           VARCHAR(100) DEFAULT NULL,
-                device       VARCHAR(100) DEFAULT NULL,
-                referrer     TEXT,
-                country_name VARCHAR(100) DEFAULT 'Kenya',
-                country_flag VARCHAR(20)  DEFAULT '🇰🇪',
-                created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                updated_at   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY idx_session_key (session_key)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS email_logs (
+                    id            INT NOT NULL AUTO_INCREMENT,
+                    booking_id    INT          DEFAULT NULL,
+                    recipient     VARCHAR(255) NOT NULL,
+                    subject       VARCHAR(500) NOT NULL,
+                    body          LONGTEXT,
+                    status        VARCHAR(50)  NOT NULL,
+                    error_message TEXT         DEFAULT NULL,
+                    created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS analytics_events (
-                id          INT NOT NULL AUTO_INCREMENT,
-                session_key VARCHAR(255) NOT NULL,
-                event_type  VARCHAR(100) NOT NULL,
-                event_name  VARCHAR(255) NOT NULL,
-                event_data  TEXT,
-                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS analytics_sessions (
+                    id           INT NOT NULL AUTO_INCREMENT,
+                    session_key  VARCHAR(255) NOT NULL,
+                    ip_address   VARCHAR(45)  DEFAULT NULL,
+                    user_agent   TEXT,
+                    browser      VARCHAR(100) DEFAULT NULL,
+                    os           VARCHAR(100) DEFAULT NULL,
+                    device       VARCHAR(100) DEFAULT NULL,
+                    referrer     TEXT,
+                    country_name VARCHAR(100) DEFAULT 'Kenya',
+                    country_flag VARCHAR(20)  DEFAULT '🇰🇪',
+                    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    updated_at   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY idx_session_key (session_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS admin_users (
-                id            INT NOT NULL AUTO_INCREMENT,
-                username      VARCHAR(100) NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY idx_username (username)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS analytics_events (
+                    id          INT NOT NULL AUTO_INCREMENT,
+                    session_key VARCHAR(255) NOT NULL,
+                    event_type  VARCHAR(100) NOT NULL,
+                    event_name  VARCHAR(255) NOT NULL,
+                    event_data  TEXT,
+                    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        await dbPool.execute(`
-            CREATE TABLE IF NOT EXISTS received_emails (
-                id           INT NOT NULL AUTO_INCREMENT,
-                message_id   VARCHAR(255) NOT NULL,
-                sender_name  VARCHAR(255) DEFAULT NULL,
-                sender_email VARCHAR(255) NOT NULL,
-                subject      VARCHAR(500) DEFAULT NULL,
-                body         LONGTEXT,
-                received_at  DATETIME     DEFAULT NULL,
-                created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY idx_message_id (message_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS admin_users (
+                    id            INT NOT NULL AUTO_INCREMENT,
+                    username      VARCHAR(100) NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY idx_username (username)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        // ── Migrations (safe – ignored if column already exists) ──────────────
-        try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) { /* ignore */ }
-        try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) { /* ignore */ }
-        try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) { /* ignore */ }
-        try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) { /* ignore */ }
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS received_emails (
+                    id           INT NOT NULL AUTO_INCREMENT,
+                    message_id   VARCHAR(255) NOT NULL,
+                    sender_name  VARCHAR(255) DEFAULT NULL,
+                    sender_email VARCHAR(255) NOT NULL,
+                    subject      VARCHAR(500) DEFAULT NULL,
+                    body         LONGTEXT,
+                    received_at  DATETIME     DEFAULT NULL,
+                    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY idx_message_id (message_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
 
-        // ── Seed default admin user if missing ────────────────────────────────
-        const [rows] = await dbPool.execute('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
-        if (rows.length === 0) {
-            await dbPool.execute('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
-                defaultUsername,
-                defaultPasswordHash
-            ]);
-            console.log(`👤 Seeded default admin user: "${defaultUsername}" / "${defaultPassword}"`);
+            // Migrations (safe – ignored if column already exists)
+            try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) {}
+
+            // Seed default admin user if missing
+            const [rows] = await dbPool.execute('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
+            if (rows.length === 0) {
+                await dbPool.execute('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
+                    defaultUsername,
+                    defaultPasswordHash
+                ]);
+                console.log(`👤 Seeded default admin user in MySQL: "${defaultUsername}" / "${defaultPassword}"`);
+            }
+
+            dbMode = 'mysql';
+            console.log('✅ Connected to MySQL successfully. Running in PRODUCTION database mode.');
+        } catch (err) {
+            console.error('❌ [Production] MySQL Connection Failed:', err.message);
+            console.warn('⚠️ Falling back to IN-MEMORY storage. Data will reset on restart.');
+            dbMode = 'memory';
         }
+    } else {
+        // ==========================================
+        // DEVELOPMENT DATABASE INIT: SQLite ONLY
+        // ==========================================
+        if (sqliteAvailable) {
+            try {
+                console.log('🔄 [Development] Connecting to SQLite local database...');
+                dbConnection = await sqliteOpen({
+                    filename: './database.sqlite',
+                    driver: sqlite3.Database
+                });
 
-        dbMode = 'mysql';
-        console.log('✅ Connected to MySQL successfully. Running in DATABASE mode.');
-    } catch (err) {
-        console.error('⚠️ MySQL Connection Failed:', err.message);
-        console.warn('⚠️ Falling back to IN-MEMORY storage. Data will reset on restart.');
-        dbMode = 'memory';
+                // Create SQLite Tables
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS bookings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        phone TEXT NOT NULL,
+                        service TEXT NOT NULL,
+                        message TEXT,
+                        tracking_token TEXT UNIQUE,
+                        status TEXT DEFAULT 'pending',
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS booking_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        booking_id INTEGER NOT NULL,
+                        sender TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        attachment_url TEXT DEFAULT NULL,
+                        attachment_name TEXT DEFAULT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS email_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        booking_id INTEGER DEFAULT NULL,
+                        recipient TEXT NOT NULL,
+                        subject TEXT NOT NULL,
+                        body TEXT,
+                        status TEXT NOT NULL,
+                        error_message TEXT DEFAULT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS analytics_sessions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_key TEXT UNIQUE NOT NULL,
+                        ip_address TEXT,
+                        user_agent TEXT,
+                        browser TEXT,
+                        os TEXT,
+                        device TEXT,
+                        referrer TEXT,
+                        country_name TEXT DEFAULT 'Kenya',
+                        country_flag TEXT DEFAULT '🇰🇪',
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS analytics_events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_key TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        event_name TEXT NOT NULL,
+                        event_data TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS admin_users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS received_emails (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        message_id TEXT UNIQUE NOT NULL,
+                        sender_name TEXT,
+                        sender_email TEXT NOT NULL,
+                        subject TEXT,
+                        body TEXT,
+                        received_at DATETIME,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                // Seed default admin in SQLite if missing
+                const rows = await dbConnection.all('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
+                if (rows.length === 0) {
+                    await dbConnection.run('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
+                        defaultUsername,
+                        defaultPasswordHash
+                    ]);
+                    console.log(`👤 Seeded default admin user in SQLite: "${defaultUsername}" / "${defaultPassword}"`);
+                }
+
+                dbMode = 'sqlite';
+                console.log('✅ Connected to SQLite successfully. Running in DEVELOPMENT database mode.');
+            } catch (sqliteErr) {
+                console.error('❌ [Development] SQLite Connection/Initialization Failed:', sqliteErr.message);
+                console.warn('⚠️ Falling back to IN-MEMORY storage. Data will reset on restart.');
+                dbMode = 'memory';
+            }
+        } else {
+            console.warn('⚠️ [Development] SQLite driver not available. Falling back to IN-MEMORY storage.');
+        }
     }
 }
 
