@@ -3,9 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check authentication
     checkAuthentication();
 
-    // Initialize Mailbox System
-    initMailboxEvents();
-
     // DOM Navigation
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -15,11 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // State Store
     let bookings = [];
     let charts = {};
-    
-    // Mailbox State
-    let mailboxFolder = 'inbox';
-    let mailboxEmails = [];
-    let selectedMailId = null;
     
     // GA-like Analytics State Store
     let gaBreakdowns = {};
@@ -54,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadAnalytics();
             } else if (tabId === 'users') {
                 loadAdminUsers();
+            } else if (tabId === 'banners') {
+                loadBanners();
             }
         });
     });
@@ -169,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeTab = document.querySelector('.nav-item.active').getAttribute('data-tab');
         if (activeTab === 'dashboard') {
             loadDashboardStats(true); // pass flag to skip connection alerts
-            loadWhatsAppStatus();
         }
     }, 20000);
 
@@ -189,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Fetch initial default tab data
                 loadDashboardStats();
-                loadWhatsAppStatus();
             }
         } catch (err) {
             console.error('Session check failure:', err);
@@ -227,100 +219,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    let waStatusPollTimeout = null;
-
-    async function loadWhatsAppStatus() {
-        if (waStatusPollTimeout) {
-            clearTimeout(waStatusPollTimeout);
-            waStatusPollTimeout = null;
-        }
-
-        try {
-            const response = await fetch('/api/admin/whatsapp/status');
-            if (response.ok) {
-                const data = await response.json();
-                const statusText = document.getElementById('waStatusText');
-                const qrContainer = document.getElementById('waQrContainer');
-                const qrImage = document.getElementById('waQrImage');
-                const disconnectBtn = document.getElementById('waDisconnectBtn');
-                
-                if (!statusText) return; // Not on dashboard
-                
-                let shouldPollFast = false;
-                
-                if (data.status === 'ready') {
-                    statusText.textContent = 'Connected ✅';
-                    statusText.style.color = '#25D366';
-                    qrContainer.style.display = 'none';
-                    if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
-                } else if (data.status === 'authenticating') {
-                    if (data.qrCode) {
-                        statusText.textContent = 'Waiting for QR Scan...';
-                        statusText.style.color = '#ff9800';
-                        qrContainer.style.display = 'block';
-                        qrImage.src = data.qrCode;
-                    } else {
-                        statusText.textContent = 'Generating QR Code...';
-                        statusText.style.color = '#ff9800';
-                        qrContainer.style.display = 'none';
-                        shouldPollFast = true;
-                    }
-                    if (disconnectBtn) disconnectBtn.style.display = 'none';
-                } else if (data.status === 'disconnected') {
-                    statusText.textContent = 'Disconnected ⚠️';
-                    statusText.style.color = '#f44336';
-                    qrContainer.style.display = 'none';
-                    if (disconnectBtn) disconnectBtn.style.display = 'none';
-                    shouldPollFast = true;
-                } else {
-                    statusText.textContent = data.status || 'Unknown';
-                    statusText.style.color = '#666';
-                    if (disconnectBtn) disconnectBtn.style.display = 'none';
-                }
-
-                if (shouldPollFast) {
-                    waStatusPollTimeout = setTimeout(loadWhatsAppStatus, 2000);
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching WhatsApp status:', err);
-        }
-    }
-
-    // Register WhatsApp disconnect listener
-    const waDisconnectBtn = document.getElementById('waDisconnectBtn');
-    if (waDisconnectBtn) {
-        waDisconnectBtn.addEventListener('click', async () => {
-            if (!confirm('Are you sure you want to disconnect WhatsApp integration? You will need to scan the QR code again to reconnect.')) return;
-            
-            waDisconnectBtn.disabled = true;
-            waDisconnectBtn.textContent = 'Disconnecting...';
-            
-            try {
-                const response = await fetch('/api/admin/whatsapp/disconnect', { method: 'POST' });
-                if (response.ok) {
-                    alert('WhatsApp disconnected successfully.');
-                    loadWhatsAppStatus();
-                } else {
-                    const err = await response.json();
-                    alert(err.error || 'Failed to disconnect WhatsApp.');
-                }
-            } catch (e) {
-                alert('Connection error while disconnecting WhatsApp.');
-            } finally {
-                waDisconnectBtn.disabled = false;
-                waDisconnectBtn.textContent = 'Disconnect WhatsApp';
-            }
-        });
-    }
-
     // Dynamic Database Engine Check
     function checkDatabaseConnection(dbMode) {
         const dbText = document.getElementById('dbText');
         const dbIndicator = document.getElementById('dbIndicator');
         
-        if (dbMode === 'sqlite') {
-            dbText.textContent = 'SQLite Mode';
+        if (dbMode === 'mysql') {
+            dbText.textContent = 'MySQL Mode';
             dbIndicator.className = 'indicator-dot green';
         } else {
             dbText.textContent = 'Memory Fallback';
@@ -342,15 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadEmails() {
         try {
-            const apiPath = mailboxFolder === 'inbox' ? '/api/admin/emails/inbox' : '/api/admin/emails/sent';
-            const response = await fetch(apiPath);
+            const response = await fetch('/api/admin/emails');
             if (response.status === 401) return window.location.href = '/admin/login.html';
             
-            mailboxEmails = await response.json();
-            renderMailboxList();
-            renderMailboxCount();
+            const emails = await response.json();
+            renderEmailsTable(emails);
         } catch (err) {
-            console.error('Error fetching mailbox emails:', err);
+            console.error('Error fetching emails:', err);
         }
     }
 
@@ -820,18 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="cancelled" ${b.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
                 </td>
-                <td>
-                    <button class="btn-chat-booking" data-booking-id="${b.id}" data-booking-name="${escapeHTML(b.name)}">
-                        💬 Chat
-                    </button>
-                </td>
             `;
-
-            // Chat button click
-            const chatBtn = tr.querySelector('.btn-chat-booking');
-            chatBtn.addEventListener('click', () => {
-                openBookingChat(b.id, b.name, b.message);
-            });
 
             // Change status action listener
             const select = tr.querySelector('.select-status');
@@ -873,323 +765,53 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bookingFilter').addEventListener('change', renderBookingsTable);
 
     // Render Emails
-    // Initialize Mailbox UI events
-    function initMailboxEvents() {
-        // Delegate events on folder switches and buttons
-        document.addEventListener('click', (e) => {
-            const folderItem = e.target.closest('.folder-item');
-            if (folderItem) {
-                e.preventDefault();
-                document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
-                folderItem.classList.add('active');
-                
-                mailboxFolder = folderItem.getAttribute('data-folder');
-                selectedMailId = null;
-                
-                const searchInput = document.getElementById('mailboxSearch');
-                if (searchInput) searchInput.value = '';
-                
-                resetMailboxViewPane();
-                loadEmails();
-            }
-            
-            if (e.target.closest('#mailboxComposeBtn')) {
-                e.preventDefault();
-                document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
-                showMailboxComposer();
-            }
-        });
-
-        // Search inputs
-        document.addEventListener('input', (e) => {
-            if (e.target && e.target.id === 'mailboxSearch') {
-                renderMailboxList();
-            }
-        });
-
-        // Sync with Gmail
-        document.addEventListener('click', async (e) => {
-            const syncBtn = e.target.closest('#mailboxSyncBtn');
-            if (syncBtn) {
-                e.preventDefault();
-                if (syncBtn.classList.contains('syncing')) return;
-                
-                syncBtn.classList.add('syncing');
-                syncBtn.disabled = true;
-                const syncText = syncBtn.innerHTML;
-                syncBtn.innerHTML = '<span class="sync-icon">🔄</span> Syncing...';
-                
-                try {
-                    const response = await fetch('/api/admin/emails/sync');
-                    if (response.ok) {
-                        const data = await response.json();
-                        mailboxEmails = data.emails;
-                        renderMailboxList();
-                        renderMailboxCount();
-                        alert('Gmail inbox synced successfully!');
-                    } else {
-                        throw new Error('Sync failed.');
-                    }
-                } catch (err) {
-                    alert('Sync failed: ' + err.message);
-                } finally {
-                    syncBtn.classList.remove('syncing');
-                    syncBtn.disabled = false;
-                    syncBtn.innerHTML = syncText;
-                }
-            }
-        });
-    }
-
-    // Reset view pane to clean slate
-    function resetMailboxViewPane() {
-        const viewPane = document.getElementById('mailboxViewPane');
-        if (viewPane) {
-            viewPane.innerHTML = `
-                <div class="mailbox-view-empty">
-                    <span>📬</span>
-                    <p>Select an email to view details or click Compose to write a new message.</p>
-                </div>`;
-        }
-    }
-
-    // Render unread indicator badges
-    function renderMailboxCount() {
-        const badge = document.getElementById('inboxCount');
-        if (!badge) return;
+    function renderEmailsTable(emails) {
+        const tbody = document.getElementById('emailsTableBody');
+        tbody.innerHTML = '';
         
-        if (mailboxFolder === 'inbox') {
-            const readList = getReadEmails();
-            const unreadCount = mailboxEmails.filter(e => !readList.includes(e.message_id)).length;
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    // Get read items from LocalStorage
-    function getReadEmails() {
-        const read = localStorage.getItem('read_emails');
-        return read ? JSON.parse(read) : [];
-    }
-
-    // Mark email as read in LocalStorage
-    function markEmailAsRead(messageId) {
-        const readList = getReadEmails();
-        if (!readList.includes(messageId)) {
-            readList.push(messageId);
-            localStorage.setItem('read_emails', JSON.stringify(readList));
-            renderMailboxCount();
-            
-            const item = document.querySelector(`.mail-item[data-message-id="${messageId}"]`);
-            if (item) item.classList.remove('unread');
-        }
-    }
-
-    // Render list of emails in middle pane
-    function renderMailboxList() {
-        const listContainer = document.getElementById('mailboxList');
-        if (!listContainer) return;
-        
-        const searchInput = document.getElementById('mailboxSearch');
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-        
-        listContainer.innerHTML = '';
-        
-        const filtered = mailboxEmails.filter(e => {
-            const senderName = e.sender_name || '';
-            const senderEmail = e.sender_email || '';
-            const recipient = e.recipient || '';
-            const subject = e.subject || '';
-            const body = e.body || '';
-            
-            return senderName.toLowerCase().includes(searchTerm) ||
-                   senderEmail.toLowerCase().includes(searchTerm) ||
-                   recipient.toLowerCase().includes(searchTerm) ||
-                   subject.toLowerCase().includes(searchTerm) ||
-                   body.toLowerCase().includes(searchTerm);
-        });
-
-        if (filtered.length === 0) {
-            listContainer.innerHTML = `
-                <div class="mailbox-empty-state">
-                    <span>✉️</span>
-                    <p>No emails found in ${mailboxFolder}</p>
-                </div>`;
+        if (emails.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">No emails sent yet.</td></tr>`;
             return;
         }
 
-        const readList = getReadEmails();
-
-        filtered.forEach(email => {
-            const item = document.createElement('div');
-            item.className = 'mail-item';
+        emails.forEach(e => {
+            const tr = document.createElement('tr');
             
-            const isInbox = mailboxFolder === 'inbox';
-            const isUnread = isInbox && !readList.includes(email.message_id);
-            if (isUnread) item.classList.add('unread');
+            let statusClass = 'pending';
+            if (e.status === 'sent') statusClass = 'completed';
+            if (e.status === 'failed') statusClass = 'cancelled';
             
-            if (selectedMailId === email.id) item.classList.add('selected');
-            item.setAttribute('data-id', email.id);
-            item.setAttribute('data-message-id', email.message_id);
-            
-            const nameDisplay = isInbox 
-                ? (email.sender_name || email.sender_email.split('@')[0]) 
-                : `To: ${email.recipient}`;
-                
-            const dateDisplay = formatDate(email.received_at || email.created_at);
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = email.body || '';
-            const plainTextBody = tempDiv.textContent || tempDiv.innerText || '';
-            const snippet = plainTextBody.substring(0, 100);
-
-            item.innerHTML = `
-                <div class="mail-item-header">
-                    <span class="mail-item-sender">${escapeHTML(nameDisplay)}</span>
-                    <span class="mail-item-date">${dateDisplay}</span>
-                </div>
-                <div class="mail-item-subject">${escapeHTML(email.subject || '(No Subject)')}</div>
-                <div class="mail-item-snippet">${escapeHTML(snippet)}...</div>
+            tr.innerHTML = `
+                <td>#${e.id}</td>
+                <td>#${e.booking_id || 'N/A'}</td>
+                <td><strong>${escapeHTML(e.recipient)}</strong></td>
+                <td>${escapeHTML(e.subject)}</td>
+                <td><span class="status-badge ${statusClass}">${e.status}</span></td>
+                <td>${formatDate(e.created_at)}</td>
+                <td>
+                    <button class="btn-view-log" data-id="${e.id}">View Content</button>
+                </td>
             `;
 
-            item.addEventListener('click', () => {
-                document.querySelectorAll('.mail-item').forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-                selectedMailId = email.id;
+            // Setup view action
+            tr.querySelector('.btn-view-log').addEventListener('click', () => {
+                const modalContent = document.getElementById('modalContent');
                 
-                if (isInbox) {
-                    markEmailAsRead(email.message_id);
-                }
+                modalContent.innerHTML = `
+                    <p><strong>To:</strong> ${escapeHTML(e.recipient)}</p>
+                    <p><strong>Subject:</strong> ${escapeHTML(e.subject)}</p>
+                    <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${e.status}</span></p>
+                    <p><strong>Sent Date:</strong> ${formatDate(e.created_at)}</p>
+                    ${e.error_message ? `<p style="color: #ef4444;"><strong>Error:</strong> ${escapeHTML(e.error_message)}</p>` : ''}
+                    <hr style="border-color: var(--border-color); margin: 16px 0;">
+                    <blockquote>${e.body}</blockquote>
+                `;
                 
-                renderMailboxDetail(email);
+                emailModal.classList.add('active');
             });
 
-            listContainer.appendChild(item);
+            tbody.appendChild(tr);
         });
-    }
-
-    // Render details of selected email in right pane
-    function renderMailboxDetail(email) {
-        const viewPane = document.getElementById('mailboxViewPane');
-        if (!viewPane) return;
-        
-        const isInbox = mailboxFolder === 'inbox';
-        const senderLabel = isInbox ? 'From' : 'To';
-        const senderVal = isInbox 
-            ? `${email.sender_name ? `"${email.sender_name}" ` : ''}&lt;${email.sender_email}&gt;`
-            : email.recipient;
-            
-        const dateVal = formatDate(email.received_at || email.created_at);
-
-        viewPane.innerHTML = `
-            <div class="mail-view-header">
-                <h2 class="mail-view-title">${escapeHTML(email.subject || '(No Subject)')}</h2>
-                <div class="mail-view-meta">
-                    <div class="mail-view-sender-info">
-                        <strong>${senderLabel}:</strong>
-                        <span>${senderVal}</span>
-                    </div>
-                    <div class="mail-view-time-info">
-                        <span>${dateVal}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="mail-view-body">
-                ${email.body || '(No Content)'}
-            </div>
-            <div class="mail-view-actions">
-                ${isInbox ? `<button class="btn btn-reply-mail" id="mailReplyBtn"><span>↩️</span> Reply</button>` : ''}
-            </div>
-        `;
-        
-        if (isInbox) {
-            document.getElementById('mailReplyBtn').addEventListener('click', () => {
-                showMailboxComposer(email.sender_email, `Re: ${email.subject}`);
-            });
-        }
-    }
-
-    // Render empty composer form
-    function showMailboxComposer(recipient = '', subject = '') {
-        const viewPane = document.getElementById('mailboxViewPane');
-        if (!viewPane) return;
-        
-        viewPane.innerHTML = `
-            <form class="mailbox-compose-form" id="mailboxComposeForm">
-                <h3>New Message</h3>
-                <div class="form-group-glass">
-                    <label for="composeTo">To</label>
-                    <input type="email" id="composeTo" required placeholder="recipient@example.com" value="${escapeHTML(recipient)}">
-                </div>
-                <div class="form-group-glass">
-                    <label for="composeSubject">Subject</label>
-                    <input type="text" id="composeSubject" required placeholder="Enter email subject" value="${escapeHTML(subject)}">
-                </div>
-                <div class="form-group-glass" style="flex: 1; display: flex; flex-direction: column;">
-                    <label for="composeBody">Message</label>
-                    <textarea id="composeBody" required placeholder="Write your message here..."></textarea>
-                </div>
-                <div class="compose-actions">
-                    <button type="button" class="btn btn-cancel-compose" id="composeCancelBtn">Cancel</button>
-                    <button type="submit" class="btn btn-send-mail">Send Message</button>
-                </div>
-            </form>
-        `;
-        
-        document.getElementById('composeCancelBtn').addEventListener('click', () => {
-            resetMailboxViewPane();
-        });
-        
-        document.getElementById('mailboxComposeForm').addEventListener('submit', sendMailboxEmail);
-    }
-
-    // Submit composer values to backend api
-    async function sendMailboxEmail(e) {
-        e.preventDefault();
-        
-        const recipient = document.getElementById('composeTo').value;
-        const subject = document.getElementById('composeSubject').value;
-        const body = document.getElementById('composeBody').value;
-        
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Sending...';
-        submitBtn.disabled = true;
-        
-        try {
-            const htmlBody = body.replace(/\n/g, '<br>');
-            
-            const response = await fetch('/api/admin/emails/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ recipient, subject, body: htmlBody })
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                alert('Email sent successfully!');
-                resetMailboxViewPane();
-                
-                const sentFolderLink = document.querySelector('.folder-item[data-folder="sent"]');
-                if (sentFolderLink) {
-                    sentFolderLink.click();
-                }
-            } else {
-                throw new Error(result.error || 'Failed to send email.');
-            }
-        } catch (err) {
-            alert('Failed to send email: ' + err.message);
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }
     }
 
     // Render raw visitor session analytics
@@ -1306,211 +928,366 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // BOOKING CHAT PANEL LOGIC
+    // HIGHLIGHTS BANNERS CRUD WORKFLOWS
     // ==========================================
-    
-    let activeChatBookingId = null;
-    let activeChatBookingNote = null;
-    let chatRefreshInterval = null;
+    const bannerModal = document.getElementById('bannerModal');
+    const bannerForm = document.getElementById('bannerForm');
+    const bannerModalTitle = document.getElementById('bannerModalTitle');
+    const addBannerBtn = document.getElementById('addBannerBtn');
+    const bannerModalCloseBtn = document.getElementById('bannerModalCloseBtn');
+    const bannerCancelBtn = document.getElementById('bannerCancelBtn');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageHelp = document.getElementById('imageHelp');
+    const imageInput = document.getElementById('image');
 
-    const chatOverlay = document.getElementById('bookingChatOverlay');
-    const chatPanelMessages = document.getElementById('chatPanelMessages');
-    const chatPanelName = document.getElementById('chatPanelName');
-    const chatPanelSubtitle = document.getElementById('chatPanelSubtitle');
-    const chatPanelClose = document.getElementById('chatPanelClose');
-    const adminChatInput = document.getElementById('adminChatInput');
-    const adminChatSendBtn = document.getElementById('adminChatSendBtn');
+    let allBanners = [];
 
-    // Admin File Attachment variables
-    let adminSelectedFile = null;
-    const adminChatAttachBtn = document.getElementById('adminChatAttachBtn');
-    const adminFileInput = document.getElementById('adminFileInput');
-    const adminFilePreviewChip = document.getElementById('adminFilePreviewChip');
-    const adminChipName = document.getElementById('adminChipName');
-    const adminChipRemove = document.getElementById('adminChipRemove');
-
-    // Reset attachments preview UI
-    function resetAdminAttachment() {
-        adminSelectedFile = null;
-        if (adminFileInput) adminFileInput.value = '';
-        if (adminFilePreviewChip) adminFilePreviewChip.style.display = 'none';
+    if (addBannerBtn) {
+        addBannerBtn.addEventListener('click', () => {
+            openBannerModal();
+        });
     }
 
-    if (adminChatAttachBtn) {
-        adminChatAttachBtn.addEventListener('click', () => adminFileInput.click());
+    if (bannerModalCloseBtn) {
+        bannerModalCloseBtn.addEventListener('click', () => {
+            closeBannerModal();
+        });
     }
-    if (adminFileInput) {
-        adminFileInput.addEventListener('change', () => {
-            adminSelectedFile = adminFileInput.files[0] || null;
-            if (adminSelectedFile) {
-                adminChipName.textContent = adminSelectedFile.name;
-                adminFilePreviewChip.style.display = 'flex';
+
+    if (bannerCancelBtn) {
+        bannerCancelBtn.addEventListener('click', () => {
+            closeBannerModal();
+        });
+    }
+
+    // Modal backdrop click
+    window.addEventListener('click', (e) => {
+        if (e.target === bannerModal) {
+            closeBannerModal();
+        }
+    });
+
+    function formatDateForLocalInput(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    function openBannerModal(banner = null) {
+        bannerForm.reset();
+        
+        if (banner) {
+            // Edit mode
+            bannerModalTitle.textContent = 'Edit Highlights Banner';
+            document.getElementById('bannerId').value = banner.id;
+            document.getElementById('badge_text').value = banner.badge_text || '';
+            document.getElementById('badge_class').value = banner.badge_class || 'event-badge';
+            document.getElementById('title').value = banner.title || '';
+            document.getElementById('subtitle').value = banner.subtitle || '';
+            document.getElementById('btn_primary_text').value = banner.btn_primary_text || '';
+            document.getElementById('btn_primary_link').value = banner.btn_primary_link || '';
+            document.getElementById('btn_secondary_text').value = banner.btn_secondary_text || '';
+            document.getElementById('btn_secondary_link').value = banner.btn_secondary_link || '';
+            document.getElementById('stat_1_number').value = banner.stat_1_number || '';
+            document.getElementById('stat_1_label').value = banner.stat_1_label || '';
+            document.getElementById('stat_2_number').value = banner.stat_2_number || '';
+            document.getElementById('stat_2_label').value = banner.stat_2_label || '';
+            document.getElementById('stat_3_number').value = banner.stat_3_number || '';
+            document.getElementById('stat_3_label').value = banner.stat_3_label || '';
+            document.getElementById('floating_icon').value = banner.floating_icon || '';
+            document.getElementById('floating_title').value = banner.floating_title || '';
+            document.getElementById('floating_desc').value = banner.floating_desc || '';
+            document.getElementById('glow_class').value = banner.glow_class || 'glow-purple';
+            document.getElementById('sort_order').value = banner.sort_order || 0;
+            document.getElementById('is_active').value = banner.is_active !== undefined ? banner.is_active : 1;
+            document.getElementById('start_date').value = formatDateForLocalInput(banner.start_date);
+            document.getElementById('end_date').value = formatDateForLocalInput(banner.end_date);
+            
+            imageInput.required = false;
+            imageHelp.textContent = 'Leave empty to keep current image.';
+            
+            if (banner.image_path) {
+                imagePreview.src = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
+                imagePreviewContainer.style.display = 'block';
             } else {
-                adminFilePreviewChip.style.display = 'none';
+                imagePreviewContainer.style.display = 'none';
+            }
+        } else {
+            // Create mode
+            bannerModalTitle.textContent = 'Add Highlights Banner';
+            document.getElementById('bannerId').value = '';
+            document.getElementById('is_active').value = 1;
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+            imageInput.required = true;
+            imageHelp.textContent = 'Required. Image will be auto-processed to WebP format.';
+            imagePreviewContainer.style.display = 'none';
+        }
+        
+        bannerModal.classList.add('active');
+    }
+
+    function closeBannerModal() {
+        bannerModal.classList.remove('active');
+        bannerForm.reset();
+    }
+
+    // Handle Form Submit
+    if (bannerForm) {
+        bannerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bannerId = document.getElementById('bannerId').value;
+            const submitBtn = document.getElementById('bannerSubmitBtn');
+            const isEdit = !!bannerId;
+            
+            const url = isEdit ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = isEdit ? 'Updating Banner...' : 'Creating Banner...';
+            
+            try {
+                const formData = new FormData(bannerForm);
+                
+                // If it is PUT, standard method override or send as POST with custom headers is not needed since express parses it,
+                // but let's send it as a direct PUT/POST fetch.
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert(isEdit ? 'Banner updated successfully.' : 'New banner created successfully.');
+                    closeBannerModal();
+                    loadBanners();
+                } else {
+                    throw new Error(result.error || 'Failed to save banner.');
+                }
+            } catch (err) {
+                alert('Error saving banner: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Banner';
             }
         });
     }
-    if (adminChipRemove) {
-        adminChipRemove.addEventListener('click', resetAdminAttachment);
-    }
 
-    function openBookingChat(bookingId, customerName, bookingNote) {
-        activeChatBookingId = bookingId;
-        activeChatBookingNote = bookingNote;
+    // Fetch and Load Banners
+    async function loadBanners() {
+        const grid = document.getElementById('bannersGrid');
+        if (!grid) return;
         
-        chatPanelName.textContent = customerName;
-        chatPanelSubtitle.textContent = `Booking #${bookingId}`;
-        chatPanelMessages.innerHTML = '<div class="chat-empty-state"><span class="chat-empty-icon">⏳</span><span class="chat-empty-text">Loading messages...</span></div>';
-        adminChatInput.value = '';
-        
-        resetAdminAttachment();
-        
-        chatOverlay.classList.add('active');
-        
-        loadChatMessages();
-        
-        // Auto-refresh chat every 10 seconds
-        if (chatRefreshInterval) clearInterval(chatRefreshInterval);
-        chatRefreshInterval = setInterval(loadChatMessages, 10000);
-        
-        // Focus input
-        setTimeout(() => adminChatInput.focus(), 400);
-    }
-
-    function closeBookingChat() {
-        chatOverlay.classList.remove('active');
-        activeChatBookingId = null;
-        activeChatBookingNote = null;
-        resetAdminAttachment();
-        if (chatRefreshInterval) {
-            clearInterval(chatRefreshInterval);
-            chatRefreshInterval = null;
-        }
-    }
-
-    if (chatPanelClose) {
-        chatPanelClose.addEventListener('click', closeBookingChat);
-    }
-    if (chatOverlay) {
-        chatOverlay.addEventListener('click', (e) => {
-            if (e.target === chatOverlay) closeBookingChat();
-        });
-    }
-
-    async function loadChatMessages() {
-        if (!activeChatBookingId) return;
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading highlights banners...</div>';
         
         try {
-            const response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`);
+            const response = await fetch('/api/admin/banners');
             if (response.status === 401) return window.location.href = '/admin/login.html';
             
-            const messages = await response.json();
-            renderChatMessages(messages);
+            allBanners = await response.json();
+            renderBannersGrid(allBanners);
         } catch (err) {
-            console.error('Error loading chat messages:', err);
+            console.error('Error fetching admin banners:', err);
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;">Failed to load banners. Please try again.</div>';
         }
     }
+    window.loadBanners = loadBanners; // expose globally if needed
 
-    function renderChatMessages(messages) {
-        chatPanelMessages.innerHTML = '';
+    function renderBannersGrid(banners) {
+        const grid = document.getElementById('bannersGrid');
+        if (!grid) return;
         
-        // Show the original booking note first if it exists
-        if (activeChatBookingNote) {
-            chatPanelMessages.innerHTML += `
-                <div class="chat-note-bubble">
-                    📝 Original booking note: "${escapeHTML(activeChatBookingNote)}"
-                </div>
-            `;
-        }
+        grid.innerHTML = '';
         
-        if (messages.length === 0 && !activeChatBookingNote) {
-            chatPanelMessages.innerHTML = `
-                <div class="chat-empty-state">
-                    <span class="chat-empty-icon">💬</span>
-                    <span class="chat-empty-text">No messages yet. Send the first message!</span>
-                </div>
-            `;
+        if (banners.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted);"><span style="font-size: 40px; display: block; margin-bottom: 15px;">🖼️</span>No banners added yet. Click "Add New Banner" to get started.</div>';
             return;
         }
         
-        messages.forEach(msg => {
-            const isAdmin = msg.sender === 'admin';
-            const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+        banners.forEach(banner => {
+            const card = document.createElement('div');
+            card.className = 'banner-card';
             
-            const isImage = msg.attachment_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.attachment_url);
-            const attachHtml = msg.attachment_url
-                ? `<div class="msg-attachment">${
-                    isImage
-                      ? `<img src="${msg.attachment_url}" alt="${escapeHTML(msg.attachment_name || 'image')}" onclick="window.open(this.src,'_blank')">`
-                      : `<a href="${msg.attachment_url}" download="${escapeHTML(msg.attachment_name || 'file')}">📄 ${escapeHTML(msg.attachment_name || 'Download file')}</a>`
-                  }</div>`
-                : '';
-            const textHtml = (msg.message && !msg.message.startsWith('[Attached:')) ? `<div>${escapeHTML(msg.message)}</div>` : '';
+            // Build stats list inside the card if present
+            let statsHtml = '';
+            if (banner.stat_1_number || banner.stat_2_number || banner.stat_3_number) {
+                statsHtml += '<div class="banner-card-stats">';
+                if (banner.stat_1_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_1_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_1_label || '')}</span>
+                        </div>
+                    `;
+                }
+                if (banner.stat_2_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_2_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_2_label || '')}</span>
+                        </div>
+                    `;
+                }
+                if (banner.stat_3_number) {
+                    statsHtml += `
+                        <div class="banner-card-stat">
+                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_3_number)}</span>
+                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_3_label || '')}</span>
+                        </div>
+                    `;
+                }
+                statsHtml += '</div>';
+            }
 
-            chatPanelMessages.innerHTML += `
-                <div class="chat-bubble ${isAdmin ? 'admin-msg' : 'customer-msg'}">
-                    <span class="chat-sender">${isAdmin ? 'You (Admin)' : '👤 Customer'}</span>
-                    ${textHtml}
-                    ${attachHtml}
-                    <span class="chat-time">${time}</span>
+            const imgPath = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
+
+            // Compute scheduling details
+            const now = new Date();
+            let schedLabel = 'Live';
+            let schedClass = 'completed';
+            
+            const isActive = banner.is_active === undefined || banner.is_active == 1;
+            
+            if (!isActive) {
+                schedLabel = 'Inactive';
+                schedClass = 'cancelled';
+            } else {
+                const startDate = banner.start_date ? new Date(banner.start_date) : null;
+                const endDate = banner.end_date ? new Date(banner.end_date) : null;
+                
+                if (startDate && now < startDate) {
+                    schedLabel = 'Scheduled';
+                    schedClass = 'pending';
+                } else if (endDate && now > endDate) {
+                    schedLabel = 'Expired';
+                    schedClass = 'cancelled';
+                }
+            }
+
+            let scheduleRangeHtml = '';
+            if (banner.start_date || banner.end_date) {
+                const startStr = banner.start_date ? new Date(banner.start_date).toLocaleString() : 'Immediate';
+                const endStr = banner.end_date ? new Date(banner.end_date).toLocaleString() : 'Indefinite';
+                scheduleRangeHtml = `
+                    <div class="banner-card-schedule" style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 6px; border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 2px;">
+                        <div><strong>Start:</strong> ${escapeHTML(startStr)}</div>
+                        <div><strong>End:</strong> ${escapeHTML(endStr)}</div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="banner-card-img-wrapper ${!isActive ? 'banner-card-dim' : ''}">
+                    <img src="${imgPath}" alt="${escapeHTML(banner.badge_text)}" class="banner-card-img">
+                    <span class="status-badge ${banner.badge_class} banner-card-badge">${escapeHTML(banner.badge_text)}</span>
+                    <span class="banner-card-order">Order: ${banner.sort_order}</span>
+                    <div class="banner-card-glow"></div>
+                </div>
+                <div class="banner-card-body">
+                    <div class="banner-card-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="status-badge ${schedClass}" style="font-size: 12px; font-weight: 700; letter-spacing: 0.3px;">${isActive ? '🟢' : '🔴'} ${schedLabel}</span>
+                        <button class="toggle-banner-btn" data-id="${banner.id}" data-active="${banner.is_active}" title="${isActive ? 'Click to Hide this banner on the website' : 'Click to Show this banner on the website'}" style="
+                            background: ${isActive ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)'};
+                            border: 1px solid ${isActive ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};
+                            color: ${isActive ? '#ef4444' : '#10b981'};
+                            border-radius: 20px;
+                            padding: 4px 12px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            white-space: nowrap;
+                        ">${isActive ? '🙈 Hide' : '👁 Show'}</button>
+                    </div>
+                    <h4 class="banner-card-title">${banner.title}</h4>
+                    <p class="banner-card-subtitle">${escapeHTML(banner.subtitle)}</p>
+                    ${scheduleRangeHtml}
+                    ${statsHtml}
+                    <div class="banner-card-actions">
+                        <button class="btn btn-view-log edit-banner-btn" data-id="${banner.id}">✏️ Edit</button>
+                        <button class="btn btn-danger delete-banner-btn" data-id="${banner.id}">🗑️ Delete</button>
+                    </div>
                 </div>
             `;
-        });
-        
-        // Auto-scroll to bottom
-        chatPanelMessages.scrollTop = chatPanelMessages.scrollHeight;
-    }
-
-    async function sendAdminMessage() {
-        const message = adminChatInput.value.trim();
-        if (!message && !adminSelectedFile) return;
-        if (!activeChatBookingId) return;
-        
-        adminChatSendBtn.disabled = true;
-        adminChatSendBtn.textContent = '...';
-        
-        try {
-            let response;
-            if (adminSelectedFile) {
-                const fd = new FormData();
-                if (message) fd.append('message', message);
-                fd.append('attachment', adminSelectedFile);
-                response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`, {
-                    method: 'POST',
-                    body: fd
-                });
-            } else {
-                response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
-                });
-            }
             
-            if (response.ok) {
-                adminChatInput.value = '';
-                resetAdminAttachment();
-                await loadChatMessages(); // Reload messages
-                adminChatInput.focus();
-            } else {
-                const err = await response.json();
-                alert(err.error || 'Failed to send message.');
-            }
-        } catch (e) {
-            alert('Connection error while sending message.');
-        } finally {
-            adminChatSendBtn.disabled = false;
-            adminChatSendBtn.textContent = 'Send';
-        }
-    }
+            grid.appendChild(card);
+        });
 
-    if (adminChatSendBtn) {
-        adminChatSendBtn.addEventListener('click', sendAdminMessage);
-    }
-    if (adminChatInput) {
-        adminChatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendAdminMessage();
+        // Add Event Listeners for actions
+        grid.querySelectorAll('.edit-banner-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const banner = allBanners.find(b => b.id == id);
+                if (banner) {
+                    openBannerModal(banner);
+                }
+            });
+        });
+
+        // Toggle Show/Hide quick action
+        grid.querySelectorAll('.toggle-banner-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const isCurrentlyActive = btn.getAttribute('data-active') == 1;
+                const label = isCurrentlyActive ? 'hide' : 'show';
+
+                btn.disabled = true;
+                btn.textContent = '⏳ Updating...';
+
+                try {
+                    const response = await fetch(`/api/admin/banners/${id}/toggle`, { method: 'PATCH' });
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        // Update the local allBanners state and re-render
+                        const bannerIndex = allBanners.findIndex(b => b.id == id);
+                        if (bannerIndex !== -1) {
+                            allBanners[bannerIndex].is_active = result.is_active;
+                        }
+                        renderBannersGrid(allBanners);
+                    } else {
+                        alert('Error: ' + (result.error || 'Could not toggle visibility.'));
+                        btn.disabled = false;
+                        btn.textContent = isCurrentlyActive ? '🙈 Hide' : '👁 Show';
+                    }
+                } catch (err) {
+                    alert('Network error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = isCurrentlyActive ? '🙈 Hide' : '👁 Show';
+                }
+            });
+        });
+
+        grid.querySelectorAll('.delete-banner-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                if (confirm('Are you sure you want to delete this highlights banner? This action cannot be undone.')) {
+                    try {
+                        const response = await fetch(`/api/admin/banners/${id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            alert('Banner deleted successfully.');
+                            loadBanners();
+                        } else {
+                            throw new Error(result.error || 'Failed to delete banner.');
+                        }
+                    } catch (err) {
+                        alert('Error deleting banner: ' + err.message);
+                    }
+                }
+            });
         });
     }
-
 });

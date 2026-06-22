@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Genius Minds Homeschooling</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="../assets/images/logo-favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-icon">GM</div>
+                <img class="brand-icon" src="../assets/images/logo-emblem-square.png" alt="Genius Minds Logo">
                 <div class="brand-details">
                     <span class="brand-name">Genius Minds</span>
                     <span class="brand-tag">Administration</span>
@@ -28,7 +29,7 @@
                     <span class="nav-icon">🎓</span> Bookings
                 </a>
                 <a href="#emails" class="nav-item" data-tab="emails">
-                    <span class="nav-icon">✉️</span> Email Center
+                    <span class="nav-icon">✉️</span> Email Dispatch
                 </a>
                 <a href="#analytics" class="nav-item" data-tab="analytics">
                     <span class="nav-icon">📈</span> Analytics
@@ -36,13 +37,16 @@
                 <a href="#users" class="nav-item" data-tab="users">
                     <span class="nav-icon">👤</span> Admin Accounts
                 </a>
+                <a href="#banners" class="nav-item" data-tab="banners">
+                    <span class="nav-icon">🖼️</span> Banners
+                </a>
             </nav>
             
             <div class="sidebar-footer">
                 <div class="status-indicator-card">
                     <div class="status-header">
                         <span class="indicator-dot green" id="dbIndicator"></span>
-                        <strong id="dbText">Database Engine</strong>
+                        <strong id="dbText">MySQL Mode</strong>
                     </div>
                     <span class="status-label">Engine Connection</span>
                 </div>
@@ -157,27 +161,6 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- WhatsApp Integration Card -->
-                    <div class="whatsapp-card-container" style="margin-top: 2rem;">
-                        <div class="chart-card">
-                            <h3>WhatsApp Integration</h3>
-                            <div class="whatsapp-status-wrapper" style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem;">
-                                <div class="whatsapp-icon" style="font-size: 3rem; color: #25D366;">
-                                    💬
-                                </div>
-                                <div class="whatsapp-info" style="flex: 1;">
-                                    <h4 style="margin: 0 0 0.5rem 0;">Connection Status: <span id="waStatusText" style="color: #666;">Checking...</span></h4>
-                                    <p style="margin: 0 0 0.8rem 0; color: #666; font-size: 0.9rem;">This service handles sending WhatsApp notifications to the admin and customers.</p>
-                                    <button id="waDisconnectBtn" class="btn-whatsapp-disconnect" style="display: none;">Disconnect WhatsApp</button>
-                                </div>
-                                <div id="waQrContainer" style="display: none; text-align: center;">
-                                    <img id="waQrImage" src="" alt="WhatsApp QR Code" style="max-width: 150px; border: 1px solid #ddd; border-radius: 8px;">
-                                    <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #666;">Scan to connect</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </section>
 
                 <!-- Section 2: Bookings -->
@@ -207,62 +190,38 @@
                                     <th>Additional Notes</th>
                                     <th>Created At</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="bookingsTableBody">
                                 <tr>
-                                    <td colspan="7" class="text-center">Loading booking records...</td>
+                                    <td colspan="6" class="text-center">Loading booking records...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </section>
 
-                <!-- Section 3: Email Center -->
+                <!-- Section 3: Email Dispatch -->
                 <section id="tab-emails" class="tab-content">
-                    <div class="mailbox-container">
-                        <!-- Left Pane: Mailbox folders/sidebar -->
-                        <div class="mailbox-sidebar">
-                            <button class="btn btn-compose-mail" id="mailboxComposeBtn">
-                                <span>✏️</span> Compose
-                            </button>
-                            <nav class="mailbox-folders">
-                                <a href="#" class="folder-item active" data-folder="inbox">
-                                    <span class="folder-icon">📥</span> Inbox
-                                    <span class="folder-badge" id="inboxCount" style="display:none;">0</span>
-                                </a>
-                                <a href="#" class="folder-item" data-folder="sent">
-                                    <span class="folder-icon">📤</span> Sent Logs
-                                </a>
-                            </nav>
-                        </div>
-                        
-                        <!-- Middle Pane: Message List -->
-                        <div class="mailbox-list-pane">
-                            <div class="mailbox-list-header">
-                                <div class="mailbox-search-box">
-                                    <input type="text" id="mailboxSearch" placeholder="Search emails...">
-                                </div>
-                                <button class="btn btn-sync-mail" id="mailboxSyncBtn" title="Sync with Gmail (geniusminds2425@gmail.com)">
-                                    <span class="sync-icon">🔄</span> Sync
-                                </button>
-                            </div>
-                            <div class="mailbox-list" id="mailboxList">
-                                <div class="mailbox-empty-state">
-                                    <span>✉️</span>
-                                    <p>Select a folder to view emails</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Right Pane: Message Viewer / Composer -->
-                        <div class="mailbox-view-pane" id="mailboxViewPane">
-                            <div class="mailbox-view-empty">
-                                <span>📬</span>
-                                <p>Select an email to view details or click Compose to write a new message.</p>
-                            </div>
-                        </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Log ID</th>
+                                    <th>Booking ID</th>
+                                    <th>Recipient</th>
+                                    <th>Subject Line</th>
+                                    <th>Dispatch Status</th>
+                                    <th>Sent Date</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading dispatch records...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
 
@@ -432,6 +391,22 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Section 6: Highlights Banners Management -->
+                <section id="tab-banners" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Highlights Banners</h3>
+                            <p class="section-subtitle">Add, edit, delete, and re-order the slides displayed in the highlights section of the main landing page.</p>
+                        </div>
+                        <button id="addBannerBtn" class="btn btn-primary">➕ Add New Banner</button>
+                    </div>
+
+                    <!-- Grid of existing banners -->
+                    <div class="banners-grid" id="bannersGrid">
+                        <!-- Dynamic banner cards will be loaded here -->
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -449,33 +424,167 @@
         </div>
     </div>
 
-    <!-- Booking Chat Panel (Slide-in) -->
-    <div class="booking-chat-overlay" id="bookingChatOverlay">
-        <div class="booking-chat-panel" id="bookingChatPanel">
-            <div class="chat-panel-header">
-                <div class="chat-panel-title">
-                    <h3 id="chatPanelName">Customer Chat</h3>
-                    <span class="chat-panel-subtitle" id="chatPanelSubtitle">Booking #---</span>
-                </div>
-                <button class="chat-panel-close" id="chatPanelClose">&times;</button>
+    <!-- Banner Add/Edit Modal overlay -->
+    <div class="modal" id="bannerModal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="bannerModalTitle">Add Highlights Banner</h3>
+                <button class="modal-close" id="bannerModalCloseBtn">&times;</button>
             </div>
-            <div class="chat-panel-body" id="chatPanelMessages">
-                <!-- Messages rendered here -->
-            </div>
-            <div class="chat-panel-footer" style="flex-direction: column; align-items: stretch;">
-                <div style="display: flex; gap: 12px; width: 100%;">
-                    <button id="adminChatAttachBtn" class="attach-btn" type="button" title="Attach file">📎</button>
-                    <input type="text" id="adminChatInput" class="chat-panel-input" placeholder="Type a reply..." autocomplete="off">
-                    <button id="adminChatSendBtn" class="chat-panel-send">Send</button>
-                </div>
-                <div id="adminFilePreviewChip" style="display:none;" class="file-preview-chip">
-                    <span>📎</span>
-                    <span class="chip-name" id="adminChipName"></span>
-                    <span class="chip-remove" id="adminChipRemove" title="Remove">✕</span>
-                </div>
-                <input type="file" id="adminFileInput" style="display:none" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
-            </div>
+            <div class="modal-body">
+                <form id="bannerForm" enctype="multipart/form-data">
+                    <input type="hidden" id="bannerId" name="id">
+                    
+                    <!-- Basic Information -->
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="badge_text">Badge Text *</label>
+                            <input type="text" id="badge_text" name="badge_text" required placeholder="e.g. Upcoming Event, Success story">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="badge_class">Badge Theme Class *</label>
+                            <select id="badge_class" name="badge_class" required>
+                                <option value="event-badge">Indigo (Event Theme)</option>
+                                <option value="success-badge">Green (Success Theme)</option>
+                                <option value="announce-badge">Orange (Announcement Theme)</option>
+                            </select>
+                        </div>
+                    </div>
 
+                    <div class="form-group-glass">
+                        <label for="title">Title * (Use &lt;span&gt;...&lt;/span&gt; for highlighted text)</label>
+                        <input type="text" id="title" name="title" required placeholder="e.g. Junior Programmer &lt;span&gt;Bootcamp.&lt;/span&gt;">
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="subtitle">Subtitle Description *</label>
+                        <textarea id="subtitle" name="subtitle" rows="3" required placeholder="Describe the event, announcement or achievement..."></textarea>
+                    </div>
+
+                    <!-- Call To Action Buttons -->
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="btn_primary_text">Primary Button Text</label>
+                            <input type="text" id="btn_primary_text" name="btn_primary_text" placeholder="e.g. Enroll Now">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="btn_primary_link">Primary Button Link</label>
+                            <input type="text" id="btn_primary_link" name="btn_primary_link" placeholder="e.g. #contact">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="btn_secondary_text">Secondary Button Text</label>
+                            <input type="text" id="btn_secondary_text" name="btn_secondary_text" placeholder="e.g. View Syllabus">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="btn_secondary_link">Secondary Button Link</label>
+                            <input type="text" id="btn_secondary_link" name="btn_secondary_link" placeholder="e.g. #curriculum">
+                        </div>
+                    </div>
+
+                    <!-- Stats Fields (Max 3) -->
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_1_number">Stat 1 Value</label>
+                            <input type="text" id="stat_1_number" name="stat_1_number" placeholder="e.g. June 15 or 98%">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_1_label">Stat 1 Label</label>
+                            <input type="text" id="stat_1_label" name="stat_1_label" placeholder="e.g. Start Date or Highest Score">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_2_number">Stat 2 Value</label>
+                            <input type="text" id="stat_2_number" name="stat_2_number" placeholder="e.g. Ages 8-18">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_2_label">Stat 2 Label</label>
+                            <input type="text" id="stat_2_label" name="stat_2_label" placeholder="e.g. Target Groups">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="stat_3_number">Stat 3 Value</label>
+                            <input type="text" id="stat_3_number" name="stat_3_number" placeholder="e.g. Hands-on">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="stat_3_label">Stat 3 Label</label>
+                            <input type="text" id="stat_3_label" name="stat_3_label" placeholder="e.g. Project Based">
+                        </div>
+                    </div>
+
+                    <!-- Floating Badge & Image -->
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="floating_icon">Floating Icon (Emoji)</label>
+                            <input type="text" id="floating_icon" name="floating_icon" placeholder="e.g. 💻, 🏆, 🔔">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="floating_title">Floating Title</label>
+                            <input type="text" id="floating_title" name="floating_title" placeholder="e.g. Python & Web">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="floating_desc">Floating Desc</label>
+                            <input type="text" id="floating_desc" name="floating_desc" placeholder="e.g. Weekend Workshops">
+                        </div>
+                    </div>
+
+                    <div class="form-grid three-cols">
+                        <div class="form-group-glass">
+                            <label for="glow_class">Glow & Theme Class *</label>
+                            <select id="glow_class" name="glow_class" required>
+                                <option value="glow-purple">Purple Glow</option>
+                                <option value="glow-green">Green Glow</option>
+                                <option value="glow-orange">Orange Glow</option>
+                            </select>
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="sort_order">Sort/Display Order *</label>
+                            <input type="number" id="sort_order" name="sort_order" required value="0" min="0">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="is_active">Status *</label>
+                            <select id="is_active" name="is_active" required>
+                                <option value="1">Show (Active)</option>
+                                <option value="0">Hide (Inactive)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="start_date">Schedule Start Date & Time</label>
+                            <input type="datetime-local" id="start_date" name="start_date">
+                            <p class="file-help-text">Leave blank to display immediately.</p>
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="end_date">Schedule End Date & Time</label>
+                            <input type="datetime-local" id="end_date" name="end_date">
+                            <p class="file-help-text">Leave blank to display indefinitely.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="image">Banner Image (Auto-processed: cropped, resized, compressed to WebP)</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <p class="file-help-text" id="imageHelp">Please select an image file. Leave empty when editing to keep current image.</p>
+                        <div id="imagePreviewContainer" style="display: none; margin-top: 10px;">
+                            <span class="preview-label">Current Image Preview:</span>
+                            <img id="imagePreview" src="" alt="Banner Preview" style="max-height: 120px; border-radius: 8px; margin-top: 5px;">
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="bannerCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="bannerSubmitBtn">Save Banner</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

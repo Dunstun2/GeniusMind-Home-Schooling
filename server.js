@@ -106,7 +106,8 @@ const memDb = {
     analytics_sessions: [],
     analytics_events: [],
     booking_messages: [],
-    admin_users: []
+    admin_users: [],
+    highlights_banners: []
 };
 
 // Seed default admin in-memory
@@ -323,6 +324,80 @@ const db = {
                 return [...memDb.analytics_events].sort((a, b) => b.created_at - a.created_at);
             }
 
+            // --- Highlights Banners ---
+            if (sqlUpper.startsWith('SELECT * FROM HIGHLIGHTS_BANNERS')) {
+                return [...memDb.highlights_banners].sort((a, b) => a.sort_order - b.sort_order);
+            }
+
+            if (sqlUpper.startsWith('INSERT INTO HIGHLIGHTS_BANNERS')) {
+                const id = memDb.highlights_banners.length + 1;
+                const record = {
+                    id,
+                    badge_text: params[0],
+                    badge_class: params[1],
+                    title: params[2],
+                    subtitle: params[3],
+                    btn_primary_text: params[4],
+                    btn_primary_link: params[5],
+                    btn_secondary_text: params[6],
+                    btn_secondary_link: params[7],
+                    stat_1_number: params[8],
+                    stat_1_label: params[9],
+                    stat_2_number: params[10],
+                    stat_2_label: params[11],
+                    stat_3_number: params[12],
+                    stat_3_label: params[13],
+                    image_path: params[14],
+                    floating_icon: params[15],
+                    floating_title: params[16],
+                    floating_desc: params[17],
+                    glow_class: params[18],
+                    sort_order: params[19] || id,
+                    is_active: params[20] !== undefined ? params[20] : 1,
+                    start_date: params[21] || null,
+                    end_date: params[22] || null
+                };
+                memDb.highlights_banners.push(record);
+                return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('UPDATE HIGHLIGHTS_BANNERS SET IS_ACTIVE')) {
+                const banner = memDb.highlights_banners.find(b => b.id == params[1]);
+                if (banner) {
+                    banner.is_active = params[0];
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+
+            if (sqlUpper.startsWith('UPDATE HIGHLIGHTS_BANNERS SET')) {
+                const id = params[23];
+                const banner = memDb.highlights_banners.find(b => b.id == id);
+                if (banner) {
+                    banner.badge_text = params[0];  banner.badge_class = params[1];
+                    banner.title = params[2];        banner.subtitle = params[3];
+                    banner.btn_primary_text = params[4];  banner.btn_primary_link = params[5];
+                    banner.btn_secondary_text = params[6]; banner.btn_secondary_link = params[7];
+                    banner.stat_1_number = params[8];  banner.stat_1_label = params[9];
+                    banner.stat_2_number = params[10]; banner.stat_2_label = params[11];
+                    banner.stat_3_number = params[12]; banner.stat_3_label = params[13];
+                    banner.image_path = params[14]; banner.floating_icon = params[15];
+                    banner.floating_title = params[16]; banner.floating_desc = params[17];
+                    banner.glow_class = params[18]; banner.sort_order = params[19];
+                    banner.is_active = params[20]; banner.start_date = params[21];
+                    banner.end_date = params[22];
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+
+            if (sqlUpper.startsWith('DELETE FROM HIGHLIGHTS_BANNERS')) {
+                const id = params[0];
+                const initialLength = memDb.highlights_banners.length;
+                memDb.highlights_banners = memDb.highlights_banners.filter(b => b.id != id);
+                return { affectedRows: initialLength - memDb.highlights_banners.length };
+            }
+
             return [];
         }
     }
@@ -455,11 +530,43 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
+            await dbPool.execute(`
+                CREATE TABLE IF NOT EXISTS highlights_banners (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    badge_text VARCHAR(255) NOT NULL,
+                    badge_class VARCHAR(100) NOT NULL DEFAULT 'event-badge',
+                    title VARCHAR(255) NOT NULL,
+                    subtitle TEXT NOT NULL,
+                    btn_primary_text VARCHAR(255) DEFAULT NULL,
+                    btn_primary_link VARCHAR(500) DEFAULT NULL,
+                    btn_secondary_text VARCHAR(255) DEFAULT NULL,
+                    btn_secondary_link VARCHAR(500) DEFAULT NULL,
+                    stat_1_number VARCHAR(100) DEFAULT NULL,
+                    stat_1_label VARCHAR(255) DEFAULT NULL,
+                    stat_2_number VARCHAR(100) DEFAULT NULL,
+                    stat_2_label VARCHAR(255) DEFAULT NULL,
+                    stat_3_number VARCHAR(100) DEFAULT NULL,
+                    stat_3_label VARCHAR(255) DEFAULT NULL,
+                    image_path VARCHAR(500) DEFAULT NULL,
+                    floating_icon VARCHAR(50) DEFAULT NULL,
+                    floating_title VARCHAR(255) DEFAULT NULL,
+                    floating_desc VARCHAR(255) DEFAULT NULL,
+                    glow_class VARCHAR(100) DEFAULT 'glow-green',
+                    sort_order INT DEFAULT 0,
+                    is_active TINYINT DEFAULT 1,
+                    start_date DATETIME DEFAULT NULL,
+                    end_date DATETIME DEFAULT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
             // Migrations (safe – ignored if column already exists)
             try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) {}
             try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) {}
             try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) {}
             try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN is_active TINYINT DEFAULT 1"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN start_date DATETIME NULL"); } catch (e) {}
+            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN end_date DATETIME NULL"); } catch (e) {}
 
             // Seed default admin user if missing
             const [rows] = await dbPool.execute('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
@@ -469,6 +576,24 @@ async function initDatabase() {
                     defaultPasswordHash
                 ]);
                 console.log(`👤 Seeded default admin user in MySQL: "${defaultUsername}" / "${defaultPassword}"`);
+            }
+
+            // Seed default banners if empty
+            const [bannerRows] = await dbPool.execute('SELECT COUNT(*) as count FROM highlights_banners');
+            if (bannerRows[0].count === 0) {
+                await dbPool.execute(`
+                    INSERT INTO highlights_banners
+                        (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                         stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                         image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    ['Upcoming Event', 'event-badge', 'Junior Programmer <span>Bootcamp.</span>',
+                     "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design.",
+                     'Enroll in Coding Program', '#contact', 'View Syllabus', '#curriculum',
+                     'June 15', 'Start Date', 'Ages 8-18', 'Target Groups', 'Hands-on', 'Project Based',
+                     '/images/hero-img.webp', '🚀', 'New Batch', 'Starting Soon', 'glow-green', 1, 1]
+                );
+                console.log('✨ Seeded default highlights banner in MySQL.');
             }
 
             dbMode = 'mysql';
@@ -579,6 +704,53 @@ async function initDatabase() {
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS highlights_banners (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        badge_text TEXT NOT NULL,
+                        badge_class TEXT NOT NULL DEFAULT 'event-badge',
+                        title TEXT NOT NULL,
+                        subtitle TEXT NOT NULL,
+                        btn_primary_text TEXT DEFAULT NULL,
+                        btn_primary_link TEXT DEFAULT NULL,
+                        btn_secondary_text TEXT DEFAULT NULL,
+                        btn_secondary_link TEXT DEFAULT NULL,
+                        stat_1_number TEXT DEFAULT NULL,
+                        stat_1_label TEXT DEFAULT NULL,
+                        stat_2_number TEXT DEFAULT NULL,
+                        stat_2_label TEXT DEFAULT NULL,
+                        stat_3_number TEXT DEFAULT NULL,
+                        stat_3_label TEXT DEFAULT NULL,
+                        image_path TEXT DEFAULT NULL,
+                        floating_icon TEXT DEFAULT NULL,
+                        floating_title TEXT DEFAULT NULL,
+                        floating_desc TEXT DEFAULT NULL,
+                        glow_class TEXT DEFAULT 'glow-green',
+                        sort_order INTEGER DEFAULT 0,
+                        is_active INTEGER DEFAULT 1,
+                        start_date DATETIME DEFAULT NULL,
+                        end_date DATETIME DEFAULT NULL
+                    )
+                `);
+
+                // Seed default banner in SQLite if empty
+                const bannerCount = await dbConnection.get('SELECT COUNT(*) as count FROM highlights_banners');
+                if (bannerCount.count === 0) {
+                    await dbConnection.run(`
+                        INSERT INTO highlights_banners
+                            (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                             stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                             image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        ['Upcoming Event', 'event-badge', 'Junior Programmer <span>Bootcamp.</span>',
+                         "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design.",
+                         'Enroll in Coding Program', '#contact', 'View Syllabus', '#curriculum',
+                         'June 15', 'Start Date', 'Ages 8-18', 'Target Groups', 'Hands-on', 'Project Based',
+                         '/images/hero-img.webp', '🚀', 'New Batch', 'Starting Soon', 'glow-green', 1, 1]
+                    );
+                    console.log('✨ Seeded default highlights banner in SQLite.');
+                }
 
                 // Seed default admin in SQLite if missing
                 const rows = await dbConnection.all('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
@@ -1496,6 +1668,162 @@ app.post('/api/admin/whatsapp/disconnect', requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('Error disconnecting WhatsApp:', err);
         res.status(500).json({ error: 'Failed to disconnect WhatsApp.' });
+    }
+});
+
+// ==========================================
+// HIGHLIGHTS BANNERS API
+// ==========================================
+
+// 1. Public: Get active banners (filtered by schedule)
+app.get('/api/banners', async (req, res) => {
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const now = new Date();
+        const activeBanners = banners
+            .filter(b => {
+                const isActive = b.is_active === undefined || b.is_active == 1;
+                const hasStarted = !b.start_date || now >= new Date(b.start_date);
+                const notExpired = !b.end_date || now <= new Date(b.end_date);
+                return isActive && hasStarted && notExpired;
+            })
+            .sort((a, b) => a.sort_order - b.sort_order);
+        res.json(activeBanners);
+    } catch (err) {
+        console.error('Error fetching highlights banners:', err);
+        res.status(500).json({ error: 'Failed to retrieve banners.' });
+    }
+});
+
+// 2. Admin: Get all banners
+app.get('/api/admin/banners', requireAdmin, async (req, res) => {
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners ORDER BY sort_order ASC');
+        res.json(banners);
+    } catch (err) {
+        console.error('Error fetching admin highlights banners:', err);
+        res.status(500).json({ error: 'Failed to retrieve banners.' });
+    }
+});
+
+// 3. Admin: Create banner
+app.post('/api/admin/banners', requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const {
+            badge_text, badge_class, title, subtitle,
+            btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+            stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+            floating_icon, floating_title, floating_desc, glow_class, sort_order,
+            is_active, start_date, end_date
+        } = req.body;
+
+        if (!badge_text || !title || !subtitle) {
+            return res.status(400).json({ error: 'badge_text, title, and subtitle are required.' });
+        }
+
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : (req.body.image_path || null);
+
+        const result = await db.query(`
+            INSERT INTO highlights_banners
+                (badge_text, badge_class, title, subtitle,
+                 btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                 stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                 image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order,
+                 is_active, start_date, end_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [badge_text, badge_class || 'event-badge', title, subtitle,
+             btn_primary_text || null, btn_primary_link || null, btn_secondary_text || null, btn_secondary_link || null,
+             stat_1_number || null, stat_1_label || null, stat_2_number || null, stat_2_label || null, stat_3_number || null, stat_3_label || null,
+             imagePath, floating_icon || null, floating_title || null, floating_desc || null,
+             glow_class || 'glow-green', parseInt(sort_order) || 0,
+             is_active !== undefined ? parseInt(is_active) : 1,
+             start_date || null, end_date || null]
+        );
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error creating banner:', err);
+        res.status(500).json({ error: 'Failed to create banner.' });
+    }
+});
+
+// 4. Admin: Update banner
+app.put('/api/admin/banners/:id', requireAdmin, upload.single('image'), async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+        if (!existingBanner) return res.status(404).json({ error: 'Banner not found.' });
+
+        const {
+            badge_text, badge_class, title, subtitle,
+            btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+            stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+            floating_icon, floating_title, floating_desc, glow_class, sort_order,
+            is_active, start_date, end_date
+        } = req.body;
+
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : (existingBanner.image_path);
+
+        await db.query(`
+            UPDATE highlights_banners SET
+                badge_text = ?, badge_class = ?, title = ?, subtitle = ?,
+                btn_primary_text = ?, btn_primary_link = ?, btn_secondary_text = ?, btn_secondary_link = ?,
+                stat_1_number = ?, stat_1_label = ?, stat_2_number = ?, stat_2_label = ?, stat_3_number = ?, stat_3_label = ?,
+                image_path = ?, floating_icon = ?, floating_title = ?, floating_desc = ?, glow_class = ?, sort_order = ?,
+                is_active = ?, start_date = ?, end_date = ?
+            WHERE id = ?`,
+            [badge_text, badge_class || 'event-badge', title, subtitle,
+             btn_primary_text || null, btn_primary_link || null, btn_secondary_text || null, btn_secondary_link || null,
+             stat_1_number || null, stat_1_label || null, stat_2_number || null, stat_2_label || null, stat_3_number || null, stat_3_label || null,
+             imagePath, floating_icon || null, floating_title || null, floating_desc || null,
+             glow_class || 'glow-green', parseInt(sort_order) || 0,
+             is_active !== undefined ? parseInt(is_active) : 1,
+             start_date || null, end_date || null,
+             bannerId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating banner:', err);
+        res.status(500).json({ error: 'Failed to update banner.' });
+    }
+});
+
+// 5. Admin: Delete banner
+app.delete('/api/admin/banners/:id', requireAdmin, async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+        if (!existingBanner) return res.status(404).json({ error: 'Banner not found.' });
+
+        // Delete image file if it was uploaded
+        if (existingBanner.image_path && existingBanner.image_path.startsWith('/uploads/')) {
+            const filePath = path.join(__dirname, existingBanner.image_path);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+
+        await db.query('DELETE FROM highlights_banners WHERE id = ?', [bannerId]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting banner:', err);
+        res.status(500).json({ error: 'Failed to delete banner.' });
+    }
+});
+
+// 6. Admin: Toggle banner visibility (Show/Hide)
+app.patch('/api/admin/banners/:id/toggle', requireAdmin, async (req, res) => {
+    const bannerId = req.params.id;
+    try {
+        const banners = await db.query('SELECT * FROM highlights_banners');
+        const existingBanner = banners.find(b => b.id == bannerId);
+        if (!existingBanner) return res.status(404).json({ error: 'Banner not found.' });
+
+        const newStatus = existingBanner.is_active == 1 ? 0 : 1;
+        await db.query('UPDATE highlights_banners SET is_active = ? WHERE id = ?', [newStatus, bannerId]);
+        res.json({ success: true, is_active: newStatus });
+    } catch (err) {
+        console.error('Error toggling banner visibility:', err);
+        res.status(500).json({ error: 'Failed to toggle banner visibility.' });
     }
 });
 
