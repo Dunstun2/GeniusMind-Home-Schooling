@@ -2,10 +2,40 @@ const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const mysql = require('mysql2/promise');
+const fs = require('fs');
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 require('dotenv').config({ override: true });
+const whatsappService = require('./utils/whatsappService');
+
+// ==========================================
+// MULTER FILE UPLOAD CONFIGURATION
+// ==========================================
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
+        cb(null, unique + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
+    fileFilter: (req, file, cb) => {
+        // Allow images, PDFs, Word docs, Excel, text files, ZIPs
+        const allowed = /jpeg|jpg|png|gif|webp|pdf|doc|docx|xls|xlsx|txt|zip/;
+        const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+        if (allowed.test(ext)) return cb(null, true);
+        cb(new Error('File type not allowed.'));
+    }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,17 +56,19 @@ app.use(session({
 }));
 
 // ==========================================
-// DUAL-MODE DATABASE ADAPTER (MySQL & Memory)
+// DUAL-MODE DATABASE ADAPTER (SQLite & Memory)
 // ==========================================
-let dbMode = 'memory'; // 'mysql' or 'memory'
-let pool = null;
+let dbMode = 'memory'; // 'sqlite' or 'memory'
+let dbConnection = null;
 
 // In-Memory Database fallback data structures
 const memDb = {
     bookings: [],
     email_logs: [],
+    received_emails: [],
     analytics_sessions: [],
     analytics_events: [],
+    booking_messages: [],
     admin_users: []
 };
 
@@ -51,12 +83,17 @@ memDb.admin_users.push({
     created_at: new Date()
 });
 
-// Helper functions for query/insert operations abstracting MySQL vs Memory
+// Helper functions for query/insert operations abstracting SQLite vs Memory
 const db = {
     async query(sql, params = []) {
-        if (dbMode === 'mysql') {
-            const [rows] = await pool.execute(sql, params);
-            return rows;
+        if (dbMode === 'sqlite') {
+            const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
+            if (isSelect) {
+                return await dbConnection.all(sql, params);
+            } else {
+                const result = await dbConnection.run(sql, params);
+                return { insertId: result.lastID, affectedRows: result.changes };
+            }
         } else {
             // Basic SQL parsing/routing to mock collections
             const sqlUpper = sql.trim().toUpperCase();
@@ -70,11 +107,33 @@ const db = {
                     phone: params[2],
                     service: params[3],
                     message: params[4],
+                    tracking_token: params[5],
                     status: 'pending',
                     created_at: new Date()
                 };
                 memDb.bookings.push(record);
                 return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('INSERT INTO BOOKING_MESSAGES')) {
+                const id = memDb.booking_messages.length + 1;
+                const record = {
+                    id,
+                    booking_id: params[0],
+                    sender: params[1],
+                    message: params[2],
+                    created_at: new Date()
+                };
+                memDb.booking_messages.push(record);
+                return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('SELECT * FROM BOOKING_MESSAGES WHERE BOOKING_ID')) {
+                return memDb.booking_messages.filter(m => m.booking_id == params[0]).sort((a, b) => a.created_at - b.created_at);
+            }
+
+            if (sqlUpper.startsWith('SELECT * FROM BOOKINGS WHERE TRACKING_TOKEN')) {
+                return memDb.bookings.filter(b => b.tracking_token === params[0]);
             }
             
             if (sqlUpper.startsWith('INSERT INTO EMAIL_LOGS')) {
@@ -179,6 +238,30 @@ const db = {
                 return [...memDb.email_logs].sort((a, b) => b.created_at - a.created_at);
             }
 
+            if (sqlUpper.startsWith('INSERT INTO RECEIVED_EMAILS')) {
+                const id = memDb.received_emails.length + 1;
+                const record = {
+                    id,
+                    message_id: params[0],
+                    sender_name: params[1],
+                    sender_email: params[2],
+                    subject: params[3],
+                    body: params[4],
+                    received_at: params[5] || new Date(),
+                    created_at: new Date()
+                };
+                memDb.received_emails.push(record);
+                return { insertId: id };
+            }
+
+            if (sqlUpper.startsWith('SELECT * FROM RECEIVED_EMAILS WHERE MESSAGE_ID')) {
+                return memDb.received_emails.filter(e => e.message_id === params[0]);
+            }
+
+            if (sqlUpper.startsWith('SELECT * FROM RECEIVED_EMAILS ORDER BY RECEIVED_AT DESC')) {
+                return [...memDb.received_emails].sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
+            }
+
             if (sqlUpper.startsWith('SELECT * FROM ANALYTICS_SESSIONS')) {
                 return [...memDb.analytics_sessions].sort((a, b) => b.created_at - a.created_at);
             }
@@ -194,115 +277,132 @@ const db = {
 
 // Initial database connection and tables creation
 async function initDatabase() {
-    const dbConfig = {
-        host: process.env.DB_HOST || '127.0.0.1',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || ''
-    };
-
     try {
-        console.log('🔄 Connecting to MySQL server...');
-        // First connect without database name to ensure db exists
-        const tempConn = await mysql.createConnection(dbConfig);
-        await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'genius_minds_db'}\``);
-        await tempConn.end();
-
-        // Connect to the specific database
-        pool = mysql.createPool({
-            ...dbConfig,
-            database: process.env.DB_NAME || 'genius_minds_db',
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0
+        console.log('🔄 Connecting to SQLite local database...');
+        
+        dbConnection = await open({
+            filename: './database.sqlite',
+            driver: sqlite3.Database
         });
 
         // Initialize Tables
-        await pool.query(`
+        await dbConnection.run(`
             CREATE TABLE IF NOT EXISTS bookings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                phone VARCHAR(50) NOT NULL,
-                service VARCHAR(100) NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                service TEXT NOT NULL,
                 message TEXT,
-                status VARCHAR(50) DEFAULT 'pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        await pool.query(`
+        // Migration for Guest Booking Portal
+        try { await dbConnection.run("ALTER TABLE bookings ADD COLUMN tracking_token TEXT"); } catch (e) { /* ignore duplicate column */ }
+        try { await dbConnection.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_tracking_token ON bookings(tracking_token)"); } catch (e) { /* ignore error */ }
+
+        await dbConnection.run(`
+            CREATE TABLE IF NOT EXISTS booking_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL,
+                sender TEXT NOT NULL,
+                message TEXT NOT NULL,
+                attachment_url TEXT,
+                attachment_name TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        // Migration for file attachments
+        try { await dbConnection.run("ALTER TABLE booking_messages ADD COLUMN attachment_url TEXT"); } catch (e) { /* ignore */ }
+        try { await dbConnection.run("ALTER TABLE booking_messages ADD COLUMN attachment_name TEXT"); } catch (e) { /* ignore */ }
+
+        await dbConnection.run(`
             CREATE TABLE IF NOT EXISTS email_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                booking_id INT,
-                recipient VARCHAR(255) NOT NULL,
-                subject VARCHAR(255) NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER,
+                recipient TEXT NOT NULL,
+                subject TEXT NOT NULL,
                 body TEXT,
-                status VARCHAR(50) NOT NULL,
+                status TEXT NOT NULL,
                 error_message TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        await pool.query(`
+        await dbConnection.run(`
             CREATE TABLE IF NOT EXISTS analytics_sessions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_key VARCHAR(255) UNIQUE NOT NULL,
-                ip_address VARCHAR(100),
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_key TEXT UNIQUE NOT NULL,
+                ip_address TEXT,
                 user_agent TEXT,
-                browser VARCHAR(100),
-                os VARCHAR(100),
-                device VARCHAR(100),
+                browser TEXT,
+                os TEXT,
+                device TEXT,
                 referrer TEXT,
-                country_name VARCHAR(100) DEFAULT 'Kenya',
-                country_flag VARCHAR(10) DEFAULT '🇰🇪',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                country_name TEXT DEFAULT 'Kenya',
+                country_flag TEXT DEFAULT '🇰🇪',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        await pool.query(`
+        await dbConnection.run(`
             CREATE TABLE IF NOT EXISTS analytics_events (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_key VARCHAR(255) NOT NULL,
-                event_type VARCHAR(100) NOT NULL,
-                event_name VARCHAR(100) NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_key TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                event_name TEXT NOT NULL,
                 event_data TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        await pool.query(`
+        await dbConnection.run(`
             CREATE TABLE IF NOT EXISTS admin_users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(100) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await dbConnection.run(`
+            CREATE TABLE IF NOT EXISTS received_emails (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id TEXT UNIQUE NOT NULL,
+                sender_name TEXT,
+                sender_email TEXT NOT NULL,
+                subject TEXT,
+                body TEXT,
+                received_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
         // Run migrations/ALTER commands to update existing DB if tables already existed
         try {
-            await pool.query("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'");
+            await dbConnection.run("ALTER TABLE analytics_sessions ADD COLUMN country_name TEXT DEFAULT 'Kenya'");
         } catch (e) { /* ignore duplicate column */ }
         try {
-            await pool.query("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(10) DEFAULT '🇰🇪'");
+            await dbConnection.run("ALTER TABLE analytics_sessions ADD COLUMN country_flag TEXT DEFAULT '🇰🇪'");
         } catch (e) { /* ignore duplicate column */ }
 
         // Check if admin user exists, if not seed default
-        const [rows] = await pool.query('SELECT * FROM admin_users WHERE username = ?', [defaultUsername]);
+        const rows = await dbConnection.all('SELECT * FROM admin_users WHERE username = ?', [defaultUsername]);
         if (rows.length === 0) {
-            await pool.query('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
+            await dbConnection.run('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
                 defaultUsername,
                 defaultPasswordHash
             ]);
             console.log(`👤 Seeded default admin user: "${defaultUsername}" / "${defaultPassword}"`);
         }
 
-        dbMode = 'mysql';
-        console.log('✅ Connected to MySQL successfully. Running in DATABASE mode.');
+        dbMode = 'sqlite';
+        console.log('✅ Connected to SQLite successfully. Running in DATABASE mode.');
     } catch (err) {
-        console.error('⚠️ MySQL Connection Failed:', err.message);
+        console.error('⚠️ SQLite Connection Failed:', err.message);
         console.warn('⚠️ Falling back to IN-MEMORY storage. All database operations will work but will reset on server restart.');
         dbMode = 'memory';
     }
@@ -336,6 +436,135 @@ function initMailer() {
     }
 }
 initMailer();
+
+// ==========================================
+// IMAP CLIENT & SYNC SETUP (Gmail Receiving)
+// ==========================================
+const { ImapFlow } = require('imapflow');
+const { simpleParser } = require('mailparser');
+
+async function syncGmailEmails() {
+    const imapUser = process.env.IMAP_USER || 'geniusminds2425@gmail.com';
+    const imapPass = process.env.IMAP_PASS;
+    
+    // Check if credentials are set
+    if (!imapUser || !imapPass) {
+        console.warn('⚠️ IMAP credentials not configured in .env. Falling back to mock emails.');
+        await generateMockEmails();
+        return;
+    }
+    
+    const client = new ImapFlow({
+        host: process.env.IMAP_HOST || 'imap.gmail.com',
+        port: parseInt(process.env.IMAP_PORT || '993'),
+        secure: process.env.IMAP_SECURE !== 'false',
+        auth: {
+            user: imapUser,
+            pass: imapPass
+        },
+        logger: false
+    });
+    
+    try {
+        await client.connect();
+        
+        // Lock inbox to fetch messages
+        let lock = await client.getMailboxLock('INBOX');
+        try {
+            const status = await client.status('INBOX', { messages: true });
+            const totalMessages = status.messages;
+            
+            if (totalMessages > 0) {
+                // Fetch last 20 messages to keep sync snappy
+                const startSeq = Math.max(1, totalMessages - 19);
+                const range = `${startSeq}:${totalMessages}`;
+                
+                for await (let message of client.fetch(range, { source: true, envelope: true })) {
+                    const messageId = message.envelope.messageId;
+                    
+                    // Check if message already exists in DB
+                    const existing = await db.query('SELECT * FROM received_emails WHERE message_id = ?', [messageId]);
+                    if (existing.length === 0) {
+                        // Parse raw message source using simpleParser
+                        const parsed = await simpleParser(message.source);
+                        
+                        // Extract details
+                        const senderName = parsed.from && parsed.from.value && parsed.from.value[0] ? (parsed.from.value[0].name || '') : '';
+                        const senderEmail = parsed.from && parsed.from.value && parsed.from.value[0] ? (parsed.from.value[0].address || '') : '';
+                        const subject = parsed.subject || '(No Subject)';
+                        const body = parsed.html || parsed.text || '(No Content)';
+                        const receivedAt = parsed.date || new Date();
+                        
+                        // Save in database
+                        await db.query(
+                            'INSERT INTO received_emails (message_id, sender_name, sender_email, subject, body, received_at) VALUES (?, ?, ?, ?, ?, ?)',
+                            [messageId, senderName, senderEmail, subject, body, receivedAt]
+                        );
+                        console.log(`📥 Synced new email from ${senderEmail}: "${subject}"`);
+                    }
+                }
+            }
+        } finally {
+            lock.release();
+        }
+        
+        await client.logout();
+    } catch (err) {
+        console.error('❌ IMAP sync failed:', err);
+        console.log('🔄 Falling back to generating mock emails.');
+        await generateMockEmails();
+    }
+}
+
+// Generate premium mock emails for demonstration/development
+async function generateMockEmails() {
+    const mockEmails = [
+        {
+            message_id: 'mock-msg-1@geniusminds.com',
+            sender_name: 'Sarah Wambui',
+            sender_email: 'sarah.wambui@gmail.com',
+            subject: 'Inquiry about Home-Based Tutoring Rates',
+            body: `<p>Dear Genius Minds Team,</p>
+                   <p>I would like to inquire about your home-based tutoring rates for a Grade 5 student. We reside in Kilimani, Nairobi. Do you have tutors available on weekday evenings (from 4:30 PM)?</p>
+                   <p>Please let me know the pricing structures and how we can get started.</p>
+                   <p>Best regards,<br>Sarah Wambui<br>+254 712 345 678</p>`,
+            received_at: new Date(Date.now() - 3600000 * 2) // 2 hours ago
+        },
+        {
+            message_id: 'mock-msg-2@geniusminds.com',
+            sender_name: 'David Kimani',
+            sender_email: 'david.kimani@outlook.com',
+            subject: 'Do you offer coding/STEM classes at the physical center?',
+            body: `<p>Hi Genius Minds,</p>
+                   <p>I was browsing your website and saw you have a physical center in Nairobi. My daughter is 12 years old and is very interested in learning computer coding (specifically Python) and STEM projects.</p>
+                   <p>Do you offer specialized coding or STEM tutoring at your center? If so, what are the weekend schedules and costs?</p>
+                   <p>Regards,<br>David Kimani</p>`,
+            received_at: new Date(Date.now() - 3600000 * 24) // 1 day ago
+        },
+        {
+            message_id: 'mock-msg-3@geniusminds.com',
+            sender_name: 'Amara Okafor',
+            sender_email: 'amara.okafor@gmail.com',
+            subject: 'Online tutoring classes inquiry for Grade 8 student',
+            body: `<p>Hello team,</p>
+                   <p>I am looking for an online tutor for my son who is preparing for his upcoming junior high math exam. He needs help particularly with algebra and geometry.</p>
+                   <p>Do you conduct classes via Zoom? Could you send details about scheduling a trial session?</p>
+                   <p>Thank you,<br>Amara</p>`,
+            received_at: new Date(Date.now() - 3600000 * 48) // 2 days ago
+        }
+    ];
+
+    for (const email of mockEmails) {
+        const existing = await db.query('SELECT * FROM received_emails WHERE message_id = ?', [email.message_id]);
+        if (existing.length === 0) {
+            await db.query(
+                'INSERT INTO received_emails (message_id, sender_name, sender_email, subject, body, received_at) VALUES (?, ?, ?, ?, ?, ?)',
+                [email.message_id, email.sender_name, email.sender_email, email.subject, email.body, email.received_at]
+            );
+        }
+    }
+}
+
 
 // Helper to resolve country from client timezone
 function resolveCountry(timezone) {
@@ -408,13 +637,18 @@ app.post('/api/bookings', async (req, res) => {
     }
     
     try {
+        const crypto = require('crypto');
+        const trackingToken = 'bkg_' + crypto.randomBytes(6).toString('hex');
+
         // Insert into database
         const result = await db.query(
-            'INSERT INTO bookings (name, email, phone, service, message) VALUES (?, ?, ?, ?, ?)',
-            [name, email, phone, service, message || '']
+            'INSERT INTO bookings (name, email, phone, service, message, tracking_token) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, email, phone, service, message || '', trackingToken]
         );
         const bookingId = result.insertId;
         
+        const trackingLink = `http://${req.headers.host || 'localhost:3000'}/track.html?token=${trackingToken}`;
+
         // Prepare Email
         const recipient = process.env.NOTIFICATION_RECIPIENT || 'geniusminds2425@gmail.com';
         const subject = `New Booking Request from ${name}`;
@@ -425,6 +659,7 @@ app.post('/api/bookings', async (req, res) => {
             <p><strong>Phone Number:</strong> ${phone}</p>
             <p><strong>Preferred Learning Option:</strong> ${service}</p>
             <p><strong>Additional Notes:</strong> ${message || 'None'}</p>
+            <p><strong>Tracking Link:</strong> <a href="${trackingLink}">${trackingLink}</a></p>
             <hr>
             <p>This message was sent from your Genius Minds Homeschooling website contact form.</p>
         `;
@@ -462,10 +697,123 @@ app.post('/api/bookings', async (req, res) => {
             [bookingId, recipient, subject, emailBody, mailStatus, mailError]
         );
         
+        // --- WhatsApp Notifications ---
+        const adminPhone = process.env.WHATSAPP_ADMIN_PHONE || '0140802797';
+        
+        // Notify Admin
+        const adminMsg = `🆕 *New Booking Request*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Service:* ${service}\n\n*Message:* ${message || 'None'}`;
+        whatsappService.sendMessage(adminPhone, adminMsg);
+        
+        // Notify Customer
+        const customerMsg = `Hello ${name}, 👋\n\nWe have received your booking request for *${service}* at Genius Minds Homeschooling.\n\nYou can track the status of your booking and chat with us directly using your secure tracking link:\n${trackingLink}\n\nThank you for choosing us! 🎓`;
+        whatsappService.sendMessage(phone, customerMsg);
+        
         res.json({ success: true, bookingId });
     } catch (err) {
         console.error('Error creating booking request:', err);
         res.status(500).json({ error: 'Failed to process booking request.' });
+    }
+});
+
+// ==========================================
+// TRACKING PORTAL APIS
+// ==========================================
+
+// Get Booking by Token
+app.get('/api/booking/track/:token', async (req, res) => {
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE tracking_token = ?', [req.params.token]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Invalid or expired tracking token.' });
+        
+        const booking = bookings[0];
+        const messages = await db.query('SELECT * FROM booking_messages WHERE booking_id = ? ORDER BY created_at ASC', [booking.id]);
+        
+        res.json({ booking, messages });
+    } catch (err) {
+        console.error('Error fetching tracking info:', err);
+        res.status(500).json({ error: 'Failed to fetch booking details.' });
+    }
+});
+
+// Send Message from Customer (supports file attachments)
+app.post('/api/booking/track/:token/message', upload.single('attachment'), async (req, res) => {
+    const message = (req.body.message || '').trim();
+    const hasAttachment = !!req.file;
+
+    if (!message && !hasAttachment) {
+        return res.status(400).json({ error: 'A message or attachment is required.' });
+    }
+    
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE tracking_token = ?', [req.params.token]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Invalid tracking token.' });
+        
+        const booking = bookings[0];
+        const attachmentUrl = hasAttachment ? `/uploads/${req.file.filename}` : null;
+        const attachmentName = hasAttachment ? req.file.originalname : null;
+        const displayMsg = message || (hasAttachment ? `[Attached: ${req.file.originalname}]` : '');
+
+        await db.query(
+            'INSERT INTO booking_messages (booking_id, sender, message, attachment_url, attachment_name) VALUES (?, ?, ?, ?, ?)',
+            [booking.id, 'customer', displayMsg, attachmentUrl, attachmentName]
+        );
+
+        // Notify Admin
+        const adminPhone = process.env.WHATSAPP_ADMIN_PHONE || '0140802797';
+        const attachNote = hasAttachment ? `\n📎 Attachment: ${req.file.originalname}` : '';
+        const adminMsg = `💬 *New Message from Customer*\n\n*Name:* ${booking.name}\n*Message:* ${displayMsg}${attachNote}`;
+        whatsappService.sendMessage(adminPhone, adminMsg);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error sending customer message:', err);
+        res.status(500).json({ error: 'Failed to send message.' });
+    }
+});
+
+// Admin APIs for Messages
+app.get('/api/admin/bookings/:id/messages', requireAdmin, async (req, res) => {
+    try {
+        const messages = await db.query('SELECT * FROM booking_messages WHERE booking_id = ? ORDER BY created_at ASC', [req.params.id]);
+        res.json(messages);
+    } catch (err) {
+        console.error('Error fetching admin messages:', err);
+        res.status(500).json({ error: 'Failed to fetch messages.' });
+    }
+});
+
+app.post('/api/admin/bookings/:id/messages', requireAdmin, upload.single('attachment'), async (req, res) => {
+    const message = (req.body.message || '').trim();
+    const hasAttachment = !!req.file;
+
+    if (!message && !hasAttachment) {
+        return res.status(400).json({ error: 'A message or attachment is required.' });
+    }
+    
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE id = ?', [req.params.id]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Booking not found.' });
+        
+        const booking = bookings[0];
+        const attachmentUrl = hasAttachment ? `/uploads/${req.file.filename}` : null;
+        const attachmentName = hasAttachment ? req.file.originalname : null;
+        const displayMsg = message || (hasAttachment ? `[Attached: ${req.file.originalname}]` : '');
+
+        await db.query(
+            'INSERT INTO booking_messages (booking_id, sender, message, attachment_url, attachment_name) VALUES (?, ?, ?, ?, ?)',
+            [booking.id, 'admin', displayMsg, attachmentUrl, attachmentName]
+        );
+
+        // Notify Customer via WhatsApp
+        const trackingLink = `http://${req.headers.host || 'localhost:3000'}/track.html?token=${booking.tracking_token}`;
+        const attachNote = hasAttachment ? `\n📎 Attachment: ${req.file.originalname}` : '';
+        const customerMsg = `Hello ${booking.name}, you have a new message from Genius Minds regarding your booking!\n\n*Admin:* ${displayMsg}${attachNote}\n\nReply here: ${trackingLink}`;
+        whatsappService.sendMessage(booking.phone, customerMsg);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error sending admin reply:', err);
+        res.status(500).json({ error: 'Failed to send reply.' });
     }
 });
 
@@ -481,7 +829,7 @@ app.post('/api/analytics/session', async (req, res) => {
     
     try {
         await db.query(
-            'INSERT INTO analytics_sessions (session_key, ip_address, user_agent, browser, os, device, referrer, country_name, country_flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP',
+            'INSERT INTO analytics_sessions (session_key, ip_address, user_agent, browser, os, device, referrer, country_name, country_flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(session_key) DO UPDATE SET updated_at = CURRENT_TIMESTAMP',
             [sessionKey, ip, uaString, parsedUa.browser, parsedUa.os, parsedUa.device, referrer || '', country.name, country.flag]
         );
         res.json({ success: true });
@@ -814,10 +1162,106 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
     
     try {
         await db.query('UPDATE bookings SET status = ? WHERE id = ?', [status, bookingId]);
+        
+        // Fetch booking to get phone number and name for WhatsApp notification
+        const bookings = await db.query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+        if (bookings.length > 0) {
+            const booking = bookings[0];
+            const msg = `Hello ${booking.name}, 👋\n\nYour booking request for *${booking.service}* has been updated to: *${status.toUpperCase()}*.\n\nThank you! 🎓`;
+            whatsappService.sendMessage(booking.phone, msg);
+        }
+        
         res.json({ success: true });
     } catch (err) {
         console.error('Error updating booking status:', err);
         res.status(500).json({ error: 'Failed to update booking.' });
+    }
+});
+
+// Sync emails via IMAP
+app.get('/api/admin/emails/sync', requireAdmin, async (req, res) => {
+    try {
+        await syncGmailEmails();
+        const received = await db.query('SELECT * FROM received_emails ORDER BY received_at DESC');
+        res.json({ success: true, emails: received });
+    } catch (err) {
+        console.error('Error syncing emails:', err);
+        res.status(500).json({ error: 'Failed to sync emails from Gmail.' });
+    }
+});
+
+// Retrieve Received Inbox Emails
+app.get('/api/admin/emails/inbox', requireAdmin, async (req, res) => {
+    try {
+        const received = await db.query('SELECT * FROM received_emails ORDER BY received_at DESC');
+        res.json(received);
+    } catch (err) {
+        console.error('Error fetching inbox emails:', err);
+        res.status(500).json({ error: 'Failed to fetch inbox emails.' });
+    }
+});
+
+// Retrieve Outgoing/Sent Email Logs
+app.get('/api/admin/emails/sent', requireAdmin, async (req, res) => {
+    try {
+        const emails = await db.query('SELECT * FROM email_logs ORDER BY created_at DESC');
+        res.json(emails);
+    } catch (err) {
+        console.error('Error fetching sent email logs:', err);
+        res.status(500).json({ error: 'Failed to fetch sent email logs.' });
+    }
+});
+
+// Send Manual Email from Dashboard
+app.post('/api/admin/emails/send', requireAdmin, async (req, res) => {
+    const { recipient, subject, body } = req.body;
+    
+    if (!recipient || !subject || !body) {
+        return res.status(400).json({ error: 'Recipient, subject, and body are required.' });
+    }
+    
+    try {
+        let mailStatus = 'sent';
+        let mailError = null;
+        
+        if (transporter) {
+            try {
+                await transporter.sendMail({
+                    from: process.env.SMTP_FROM || `"Genius Minds Homeschooling" <${process.env.SMTP_USER}>`,
+                    to: recipient,
+                    subject: subject,
+                    html: body
+                });
+                console.log(`📧 Composed email sent successfully to ${recipient}`);
+            } catch (err) {
+                console.error('📧 Composed email sending failed:', err);
+                mailStatus = 'failed';
+                mailError = err.message;
+            }
+        } else {
+            console.log('-------------------------------------------');
+            console.log('MOCK EMAIL SENDING (SMTP credentials empty)');
+            console.log(`To: ${recipient}`);
+            console.log(`Subject: ${subject}`);
+            console.log(`Body:\n${body}`);
+            console.log('-------------------------------------------');
+            mailStatus = 'logged_to_console';
+        }
+        
+        // Log the manual email send (booking_id is null)
+        await db.query(
+            'INSERT INTO email_logs (booking_id, recipient, subject, body, status, error_message) VALUES (?, ?, ?, ?, ?, ?)',
+            [null, recipient, subject, body, mailStatus, mailError]
+        );
+        
+        if (mailStatus === 'failed') {
+            return res.status(500).json({ error: 'Failed to send email: ' + mailError });
+        }
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error in send manual email route:', err);
+        res.status(500).json({ error: 'Failed to process email dispatch.' });
     }
 });
 
@@ -844,9 +1288,28 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     }
 });
 
+// WhatsApp Status API
+app.get('/api/admin/whatsapp/status', requireAdmin, (req, res) => {
+    res.json(whatsappService.getStatus());
+});
+
+// WhatsApp Disconnect API
+app.post('/api/admin/whatsapp/disconnect', requireAdmin, async (req, res) => {
+    try {
+        await whatsappService.disconnect();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error disconnecting WhatsApp:', err);
+        res.status(500).json({ error: 'Failed to disconnect WhatsApp.' });
+    }
+});
+
 // ==========================================
 // SERVING STATIC ASSETS & FILES
 // ==========================================
+
+// Serve uploaded files (attachments from chat)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route for static admin files (must be before the root static serving)
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
@@ -855,6 +1318,9 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
+
+// Route for public pages (track.html, etc.) — serves /public as root-level URLs
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Route for general static website (landing page, script.js, styles.css)
 app.use(express.static(path.join(__dirname)));
@@ -871,4 +1337,7 @@ app.listen(PORT, () => {
     console.log(`🔗 Local Address: http://localhost:${PORT}`);
     console.log(`🔗 Admin Dashboard: http://localhost:${PORT}/admin`);
     console.log(`=======================================================`);
+    
+    // Initialize WhatsApp
+    whatsappService.initialize();
 });

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Tracking Portal | Genius Minds Homeschooling</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0b;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.2);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 400px),
+                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.1), transparent 400px);
+            background-attachment: fixed;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .header-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-logo h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28px;
+        }
+
+        .header-logo p {
+            color: var(--text-muted);
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: none; /* hidden until loaded */
+        }
+
+        #loadingState, #errorState {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .booking-header h2 {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge.contacted { background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); }
+        .badge.completed { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge.cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            width: 100px;
+            color: var(--text-muted);
+        }
+
+        .detail-value {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .chat-section {
+            margin-top: 30px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .chat-section h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            color: var(--text-muted);
+        }
+
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-right: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .msg-admin {
+            align-self: flex-start;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-customer {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .chat-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 20px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .chat-btn:hover {
+            transform: translateY(-2px);
+            background: #4f46e5;
+        }
+
+        .chat-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .attach-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-muted);
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .attach-btn:hover {
+            background: rgba(99,102,241,0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .file-preview-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99,102,241,0.08);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .file-preview-chip .chip-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chip-remove {
+            cursor: pointer;
+            color: #ef4444;
+            font-size: 16px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .msg-attachment {
+            margin-top: 8px;
+        }
+
+        .msg-attachment img {
+            max-width: 100%;
+            border-radius: 8px;
+            display: block;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+
+        .msg-attachment a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: inherit;
+            text-decoration: none;
+            font-size: 12px;
+            margin-top: 4px;
+            transition: background 0.2s;
+        }
+
+        .msg-attachment a:hover { background: rgba(255,255,255,0.14); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-logo">
+        <h1>Genius Minds</h1>
+        <p>Homeschooling Booking Tracker</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState">
+        <div class="spinner"></div>
+        <p style="color: var(--text-muted);">Loading your booking details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" style="display: none;">
+        <h2 style="color: var(--danger); font-family: 'Outfit', sans-serif;">Oops!</h2>
+        <p id="errorMsg" style="color: var(--text-muted);">Invalid or expired tracking link.</p>
+    </div>
+
+    <!-- Booking Card -->
+    <div class="card" id="bookingCard">
+        <div class="booking-header">
+            <h2>Your Booking</h2>
+            <span id="bookingStatus" class="badge">Loading...</span>
+        </div>
+        
+        <div class="detail-row">
+            <div class="detail-label">Service:</div>
+            <div class="detail-value" id="bookingService"></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Date:</div>
+            <div class="detail-value" id="bookingDate"></div>
+        </div>
+        
+        <div class="chat-section">
+            <h3>Messages</h3>
+            <div class="chat-messages" id="chatBox">
+                <!-- Messages go here -->
+            </div>
+            
+            <div class="chat-input-wrapper">
+                    <button id="attachBtn" class="attach-btn" type="button" title="Attach file">📎</button>
+                    <input type="text" id="chatInput" class="chat-input" placeholder="Type a message to the admin..." autocomplete="off">
+                    <button id="sendBtn" class="chat-btn">Send</button>
+                </div>
+                <div id="filePreviewChip" style="display:none;" class="file-preview-chip">
+                    <span>📎</span>
+                    <span class="chip-name" id="chipName"></span>
+                    <span class="chip-remove" id="chipRemove" title="Remove">✕</span>
+                </div>
+                <input type="file" id="fileInput" style="display:none" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const bookingCard = document.getElementById('bookingCard');
+        const chatBox = document.getElementById('chatBox');
+        
+        if (!token) {
+            loadingState.style.display = 'none';
+            errorState.style.display = 'block';
+            document.getElementById('errorMsg').textContent = 'No tracking token provided.';
+            return;
+        }
+        
+        let currentBooking = null;
+
+        // Fetch Data
+        async function loadBooking() {
+            try {
+                const res = await fetch(`/api/booking/track/${token}`);
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to load booking.');
+                }
+                
+                currentBooking = data.booking;
+                
+                // Populate UI
+                document.getElementById('bookingStatus').textContent = currentBooking.status;
+                document.getElementById('bookingStatus').className = `badge ${currentBooking.status}`;
+                
+                let srvLabel = currentBooking.service;
+                if(srvLabel === 'online') srvLabel = '🌐 Online Learning';
+                if(srvLabel === 'home') srvLabel = '🏠 Home Tutoring';
+                if(srvLabel === 'physical') srvLabel = '🏢 Center Location';
+                document.getElementById('bookingService').textContent = srvLabel;
+                
+                const d = new Date(currentBooking.created_at);
+                document.getElementById('bookingDate').textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                renderMessages(data.messages || []);
+                
+                loadingState.style.display = 'none';
+                bookingCard.style.display = 'block';
+                
+            } catch (err) {
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('errorMsg').textContent = err.message;
+            }
+        }
+        
+        function renderMessages(messages) {
+            chatBox.innerHTML = '';
+            
+            // Add original booking message as first chat bubble if exists
+            if (currentBooking.message) {
+                chatBox.innerHTML += `
+                    <div class="msg-bubble msg-customer">
+                        ${escapeHTML(currentBooking.message)}
+                        <span class="msg-time">Booking Note</span>
+                    </div>
+                `;
+            }
+            
+            if (messages.length === 0 && !currentBooking.message) {
+                chatBox.innerHTML = `<div class="empty-chat">No messages yet. Say hello!</div>`;
+                return;
+            }
+            
+            messages.forEach(msg => {
+                const isAdmin = msg.sender === 'admin';
+                const time = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const isImage = msg.attachment_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.attachment_url);
+                const attachHtml = msg.attachment_url
+                    ? `<div class="msg-attachment">${
+                        isImage
+                          ? `<img src="${msg.attachment_url}" alt="${escapeHTML(msg.attachment_name || 'image')}" onclick="window.open(this.src,'_blank')">`
+                          : `<a href="${msg.attachment_url}" download="${escapeHTML(msg.attachment_name || 'file')}">📄 ${escapeHTML(msg.attachment_name || 'Download file')}</a>`
+                      }</div>`
+                    : '';
+                const textHtml = (msg.message && !msg.message.startsWith('[Attached:')) ? `<div>${escapeHTML(msg.message)}</div>` : '';
+                
+                chatBox.innerHTML += `
+                    <div class="msg-bubble ${isAdmin ? 'msg-admin' : 'msg-customer'}">
+                        ${isAdmin ? '<div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: var(--primary);">Admin</div>' : ''}
+                        ${textHtml}
+                        ${attachHtml}
+                        <span class="msg-time">${time}</span>
+                    </div>
+                `;
+            });
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag])
+            );
+        }
+        
+        // Send Message
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const filePreviewChip = document.getElementById('filePreviewChip');
+        const chipName = document.getElementById('chipName');
+        const chipRemove = document.getElementById('chipRemove');
+
+        let selectedFile = null;
+
+        attachBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            selectedFile = fileInput.files[0] || null;
+            if (selectedFile) {
+                chipName.textContent = selectedFile.name;
+                filePreviewChip.style.display = 'flex';
+            } else {
+                filePreviewChip.style.display = 'none';
+            }
+        });
+        chipRemove.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            filePreviewChip.style.display = 'none';
+        });
+        
+        async function sendMessage() {
+            const val = chatInput.value.trim();
+            if (!val && !selectedFile) return;
+            
+            sendBtn.disabled = true;
+            sendBtn.textContent = '...';
+            
+            try {
+                let res;
+                if (selectedFile) {
+                    const fd = new FormData();
+                    if (val) fd.append('message', val);
+                    fd.append('attachment', selectedFile);
+                    res = await fetch(`/api/booking/track/${token}/message`, { method: 'POST', body: fd });
+                } else {
+                    res = await fetch(`/api/booking/track/${token}/message`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: val })
+                    });
+                }
+                
+                if (res.ok) {
+                    chatInput.value = '';
+                    selectedFile = null;
+                    fileInput.value = '';
+                    filePreviewChip.style.display = 'none';
+                    await loadBooking();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Failed to send message.');
+                }
+            } catch (e) {
+                alert('Connection error.');
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+        
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Init
+        loadBooking();
+        
+        // Auto-refresh chat every 15 seconds
+        setInterval(() => {
+            if (bookingCard.style.display !== 'none') {
+                loadBooking();
+            }
+        }, 15000);
+    });
+</script>
+</body>
+</html>
