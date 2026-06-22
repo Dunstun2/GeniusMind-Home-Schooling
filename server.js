@@ -7,6 +7,7 @@ const mysql = require('mysql2/promise');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const cors = require('cors');
 require('dotenv').config({ override: true });
 const whatsappService = require('./utils/whatsappService');
 
@@ -39,6 +40,7 @@ const upload = multer({
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({ origin: true, credentials: true })); // Allow all origins with credentials
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
