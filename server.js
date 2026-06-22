@@ -1,3 +1,4 @@
+// Triggering watch reload for seeding default banners
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
@@ -110,6 +111,79 @@ const memDb = {
     highlights_banners: []
 };
 
+// Default dynamic homepage highlights banners seed data
+const defaultBanners = [
+    {
+        badge_text: 'Upcoming Event',
+        badge_class: 'event-badge',
+        title: 'Junior Programmer <span>Bootcamp.</span>',
+        subtitle: "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design, building critical logical skills for the future.",
+        btn_primary_text: 'Enroll in Coding Program',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'View Syllabus',
+        btn_secondary_link: '#curriculum',
+        stat_1_number: 'June 15',
+        stat_1_label: 'Start Date',
+        stat_2_number: 'Ages 8-18',
+        stat_2_label: 'Target Groups',
+        stat_3_number: 'Hands-on',
+        stat_3_label: 'Project Based',
+        image_path: 'assets/images/upcoming_coder.png',
+        floating_icon: '💻',
+        floating_title: 'Python & Web',
+        floating_desc: 'Weekend Workshops',
+        glow_class: 'glow-purple',
+        sort_order: 1,
+        is_active: 1
+    },
+    {
+        badge_text: 'Outstanding Achievement',
+        badge_class: 'success-badge',
+        title: 'Outstanding IGCSE <span>Triumphs.</span>',
+        subtitle: 'We celebrate academic excellence! Our IGCSE student Esther W. scored an outstanding 98% in Mathematics under customized Genius Minds personal tutoring.',
+        btn_primary_text: 'Request Personal Tutor',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'Our Success Stories',
+        btn_secondary_link: '#about',
+        stat_1_number: '98%',
+        stat_1_label: 'Highest Score',
+        stat_2_number: 'A+ Grade',
+        stat_2_label: 'Average Performance',
+        stat_3_number: '1-on-1',
+        stat_3_label: 'Personalized Care',
+        image_path: 'assets/images/achievement_trophy.png',
+        floating_icon: '🏆',
+        floating_title: 'IGCSE Maths',
+        floating_desc: 'Esther W. 98%',
+        glow_class: 'glow-green',
+        sort_order: 2,
+        is_active: 1
+    },
+    {
+        badge_text: 'Enrollment Announcement',
+        badge_class: 'announce-badge',
+        title: 'Term 3 Admissions <span>Now Open.</span>',
+        subtitle: 'Enrollments for Online, Home-based, and Physical center tutoring classes are open. We support IGCSE, CBE/CBC, and the 8-4-4 systems. Secure your child\'s success today!',
+        btn_primary_text: 'Book a Free Session',
+        btn_primary_link: '#contact',
+        btn_secondary_text: 'Explore Formats',
+        btn_secondary_link: '#services',
+        stat_1_number: 'Active',
+        stat_1_label: 'Admissions Status',
+        stat_2_number: 'Online/Home',
+        stat_2_label: 'Flexible Formats',
+        stat_3_number: 'Affordable',
+        stat_3_label: 'Flexible Payments',
+        image_path: 'assets/images/announcement_bell.png',
+        floating_icon: '🔔',
+        floating_title: 'Admissions Open',
+        floating_desc: 'CBE, IGCSE & 8-4-4',
+        glow_class: 'glow-orange',
+        sort_order: 3,
+        is_active: 1
+    }
+];
+
 // Seed default admin in-memory
 const defaultUsername = process.env.ADMIN_DEFAULT_USER || 'admin';
 const defaultPassword = process.env.ADMIN_DEFAULT_PASS || 'GeniusAdmin2026!';
@@ -120,6 +194,14 @@ memDb.admin_users.push({
     password_hash: defaultPasswordHash,
     created_at: new Date()
 });
+
+// Seed default banners in-memory
+memDb.highlights_banners = defaultBanners.map((b, idx) => ({
+    id: idx + 1,
+    ...b,
+    start_date: null,
+    end_date: null
+}));
 
 // Helper functions for query/insert operations abstracting SQLite vs Memory
 const db = {
@@ -581,19 +663,20 @@ async function initDatabase() {
             // Seed default banners if empty
             const [bannerRows] = await dbPool.execute('SELECT COUNT(*) as count FROM highlights_banners');
             if (bannerRows[0].count === 0) {
-                await dbPool.execute(`
-                    INSERT INTO highlights_banners
-                        (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
-                         stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
-                         image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    ['Upcoming Event', 'event-badge', 'Junior Programmer <span>Bootcamp.</span>',
-                     "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design.",
-                     'Enroll in Coding Program', '#contact', 'View Syllabus', '#curriculum',
-                     'June 15', 'Start Date', 'Ages 8-18', 'Target Groups', 'Hands-on', 'Project Based',
-                     '/images/hero-img.webp', '🚀', 'New Batch', 'Starting Soon', 'glow-green', 1, 1]
-                );
-                console.log('✨ Seeded default highlights banner in MySQL.');
+                for (const banner of defaultBanners) {
+                    await dbPool.execute(`
+                        INSERT INTO highlights_banners
+                            (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                             stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                             image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [banner.badge_text, banner.badge_class, banner.title, banner.subtitle,
+                         banner.btn_primary_text, banner.btn_primary_link, banner.btn_secondary_text, banner.btn_secondary_link,
+                         banner.stat_1_number, banner.stat_1_label, banner.stat_2_number, banner.stat_2_label, banner.stat_3_number, banner.stat_3_label,
+                         banner.image_path, banner.floating_icon, banner.floating_title, banner.floating_desc, banner.glow_class, banner.sort_order, banner.is_active]
+                    );
+                }
+                console.log('✨ Seeded default highlights banners in MySQL.');
             }
 
             dbMode = 'mysql';
@@ -734,22 +817,23 @@ async function initDatabase() {
                     )
                 `);
 
-                // Seed default banner in SQLite if empty
+                // Seed default banners in SQLite if empty
                 const bannerCount = await dbConnection.get('SELECT COUNT(*) as count FROM highlights_banners');
                 if (bannerCount.count === 0) {
-                    await dbConnection.run(`
-                        INSERT INTO highlights_banners
-                            (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
-                             stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
-                             image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        ['Upcoming Event', 'event-badge', 'Junior Programmer <span>Bootcamp.</span>',
-                         "Launch your child's coding journey! Our interactive programmer workshops introduce python, scratch, and web design.",
-                         'Enroll in Coding Program', '#contact', 'View Syllabus', '#curriculum',
-                         'June 15', 'Start Date', 'Ages 8-18', 'Target Groups', 'Hands-on', 'Project Based',
-                         '/images/hero-img.webp', '🚀', 'New Batch', 'Starting Soon', 'glow-green', 1, 1]
-                    );
-                    console.log('✨ Seeded default highlights banner in SQLite.');
+                    for (const banner of defaultBanners) {
+                        await dbConnection.run(`
+                            INSERT INTO highlights_banners
+                                (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
+                                 stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
+                                 image_path, floating_icon, floating_title, floating_desc, glow_class, sort_order, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [banner.badge_text, banner.badge_class, banner.title, banner.subtitle,
+                             banner.btn_primary_text, banner.btn_primary_link, banner.btn_secondary_text, banner.btn_secondary_link,
+                             banner.stat_1_number, banner.stat_1_label, banner.stat_2_number, banner.stat_2_label, banner.stat_3_number, banner.stat_3_label,
+                             banner.image_path, banner.floating_icon, banner.floating_title, banner.floating_desc, banner.glow_class, banner.sort_order, banner.is_active]
+                        );
+                    }
+                    console.log('✨ Seeded default highlights banners in SQLite.');
                 }
 
                 // Seed default admin in SQLite if missing
