@@ -49,11 +49,15 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, origin || true);
-        } else {
-            callback(null, true); // Allow all other origins as well (fallback to original behavior)
+        // If origin is null (from redirects) or missing, fallback to the main production domain
+        if (!origin || origin === 'null') {
+            return callback(null, 'https://www.geniusminds.website');
         }
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, origin);
+        }
+        // Fallback for any other origin
+        return callback(null, 'https://www.geniusminds.website');
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],

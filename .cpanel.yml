@@ -15,3 +15,5 @@ deployment:
     - /bin/cp package.json $DEPLOYPATH/
     - /bin/cp package-lock.json $DEPLOYPATH/
     - /bin/cp .env.example $DEPLOYPATH/
+    - /bin/mkdir -p $DEPLOYPATH/tmp
+    - /bin/touch $DEPLOYPATH/tmp/restart.txt
