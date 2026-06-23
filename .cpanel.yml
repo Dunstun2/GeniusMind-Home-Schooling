@@ -3,24 +3,6 @@ deployment:
   tasks:
     - export DEPLOYPATH=$HOME/geniusminds
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -r admin $DEPLOYPATH/
-    - /bin/cp -r assets $DEPLOYPATH/
-    - /bin/cp -r public $DEPLOYPATH/
-    - /bin/cp -r utils $DEPLOYPATH/
-    - /bin/cp index.html $DEPLOYPATH/
-    - /bin/cp about.html $DEPLOYPATH/
-    - /bin/cp blog-post.html $DEPLOYPATH/
-    - /bin/cp blog.html $DEPLOYPATH/
-    - /bin/cp contact.html $DEPLOYPATH/
-    - /bin/cp courses.html $DEPLOYPATH/
-    - /bin/cp faq.html $DEPLOYPATH/
-    - /bin/cp -r components $DEPLOYPATH/
-    - /bin/cp styles.css $DEPLOYPATH/
-    - /bin/cp script.js $DEPLOYPATH/
-    - /bin/cp analytics.js $DEPLOYPATH/
-    - /bin/cp server.js $DEPLOYPATH/
-    - /bin/cp package.json $DEPLOYPATH/
-    - /bin/cp package-lock.json $DEPLOYPATH/
-    - /bin/cp .env.example $DEPLOYPATH/
+    - /bin/cp -rf * $DEPLOYPATH/
     - /bin/mkdir -p $DEPLOYPATH/tmp
     - /bin/touch $DEPLOYPATH/tmp/restart.txt
