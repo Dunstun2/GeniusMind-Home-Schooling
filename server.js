@@ -207,7 +207,7 @@ memDb.highlights_banners = defaultBanners.map((b, idx) => ({
 const db = {
     async query(sql, params = []) {
         if (dbMode === 'mysql') {
-            const [rows] = await dbPool.execute(sql, params);
+            const [rows] = await dbPool.query(sql, params);
             const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
             if (isSelect) {
                 return rows;
@@ -509,10 +509,10 @@ async function initDatabase() {
             });
 
             // Test connection
-            await dbPool.execute('SELECT 1');
+            await dbPool.query('SELECT 1');
 
             // Create MySQL Tables
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS bookings (
                     id              INT NOT NULL AUTO_INCREMENT,
                     name            VARCHAR(255) NOT NULL,
@@ -528,7 +528,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS booking_messages (
                     id              INT NOT NULL AUTO_INCREMENT,
                     booking_id      INT NOT NULL,
@@ -541,7 +541,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS email_logs (
                     id            INT NOT NULL AUTO_INCREMENT,
                     booking_id    INT          DEFAULT NULL,
@@ -555,7 +555,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS analytics_sessions (
                     id           INT NOT NULL AUTO_INCREMENT,
                     session_key  VARCHAR(255) NOT NULL,
@@ -574,7 +574,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS analytics_events (
                     id          INT NOT NULL AUTO_INCREMENT,
                     session_key VARCHAR(255) NOT NULL,
@@ -586,7 +586,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS admin_users (
                     id            INT NOT NULL AUTO_INCREMENT,
                     username      VARCHAR(100) NOT NULL,
@@ -597,7 +597,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS received_emails (
                     id           INT NOT NULL AUTO_INCREMENT,
                     message_id   VARCHAR(255) NOT NULL,
@@ -612,7 +612,7 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
-            await dbPool.execute(`
+            await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS highlights_banners (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     badge_text VARCHAR(255) NOT NULL,
@@ -642,18 +642,18 @@ async function initDatabase() {
             `);
 
             // Migrations (safe – ignored if column already exists)
-            try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN is_active TINYINT DEFAULT 1"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN start_date DATETIME NULL"); } catch (e) {}
-            try { await dbPool.execute("ALTER TABLE highlights_banners ADD COLUMN end_date DATETIME NULL"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN is_active TINYINT DEFAULT 1"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN start_date DATETIME NULL"); } catch (e) {}
+            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN end_date DATETIME NULL"); } catch (e) {}
 
             // Seed default admin user if missing
-            const [rows] = await dbPool.execute('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
+            const [rows] = await dbPool.query('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
             if (rows.length === 0) {
-                await dbPool.execute('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
+                await dbPool.query('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)', [
                     defaultUsername,
                     defaultPasswordHash
                 ]);
@@ -661,10 +661,10 @@ async function initDatabase() {
             }
 
             // Seed default banners if empty
-            const [bannerRows] = await dbPool.execute('SELECT COUNT(*) as count FROM highlights_banners');
+            const [bannerRows] = await dbPool.query('SELECT COUNT(*) as count FROM highlights_banners');
             if (bannerRows[0].count === 0) {
                 for (const banner of defaultBanners) {
-                    await dbPool.execute(`
+                    await dbPool.query(`
                         INSERT INTO highlights_banners
                             (badge_text, badge_class, title, subtitle, btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
                              stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,

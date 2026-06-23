@@ -105,6 +105,8 @@ img {
     cursor: pointer;
     transition: var(--transition);
     border: 2px solid transparent;
+    white-space: nowrap; /* Prevent button text from wrapping (e.g. "Book Now") */
+    flex-shrink: 0; /* Don't shrink inside flex navbar */
 }
 
 .btn-primary {
@@ -899,10 +901,19 @@ section {
 .highlights-slider {
     position: relative;
     width: 100%;
-    min-height: 100vh; /* Big like before */
-    overflow: hidden;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: visible;
     background: var(--bg-surface);
     border-bottom: 1px solid var(--border-color);
+    padding: 0; /* Override global section { padding: 6rem 0 } — no gap above image */
+}
+
+/* Removed desktop .hero-content padding-top override as we are pushing the entire slide down now */
+@media (min-width: 1025px) {
+    .highlights-slider .hero-content {
+        padding-top: 0; 
+    }
 }
 
 /* Horizontal Sliding Carousel Track */
@@ -921,9 +932,9 @@ section {
     flex-shrink: 0;
     min-height: 100vh;
     display: flex;
-    align-items: center;
-    padding-top: 3rem; /* Reduced top offset to bring contents closer to navbar */
-    padding-bottom: 5rem; /* Space for dots at bottom */
+    align-items: flex-start; /* Content anchored to top, close to navbar */
+    padding-top: 5rem; /* Start directly below navbar (~80px to be safe) */
+    padding-bottom: 4rem; /* Space for dots at bottom */
     position: relative;
 }
 
@@ -1039,57 +1050,193 @@ section {
 @media (max-width: 1024px) {
     .highlights-slider .slider-btn { display: none; } /* Hide arrows on tablets and mobile devices */
     .highlights-slider {
-        min-height: 100vh;
+        min-height: auto;
+        overflow: visible;
+    }
+    .highlights-slider .slider-container {
+        overflow: visible;
     }
     .highlights-slider .slide {
-        padding-top: 4.5rem;
+        padding-top: 4rem; /* Start directly below navbar (~64px) */
+        padding-left: 0;
+        padding-right: 0;
         padding-bottom: 5rem;
         width: 100%;
         flex-shrink: 0;
-        min-height: 100vh;
+        min-height: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
     }
     .highlights-slider .hero-container {
-        grid-template-columns: 1fr;
-        gap: 2rem;
+        display: flex;
+        flex-direction: column; /* Stack vertically */
+        gap: 0;
         text-align: center;
-        padding-top: 2rem;
+        padding: 0; /* Remove side padding so image can fill width */
+        max-width: 100%; /* Override container max-width limits */
+        margin: 0;
+    }
+    /* IMAGE FIRST: pull image wrapper above text content on mobile */
+    .highlights-slider .hero-image-wrapper {
+        order: -1; /* Show image BEFORE text */
+        display: block;
+        width: 100%;
+        max-width: 100%; /* Fill full width */
+        margin: 0; /* No top gap — image flush under navbar */
+        position: relative;
+        padding-bottom: 0;
+    }
+    .highlights-slider .hero-image-wrapper .image-card {
+        transform: none;
+        border-radius: 0; /* No rounded corners on mobile — full bleed */
+        padding: 0;
+        margin: 0;
+        border: none; /* Remove glass card border for clean look */
+        background: transparent;
+    }
+    .highlights-slider .hero-image-wrapper .image-card .hero-img {
+        width: 100%;
+        height: 260px; /* Taller since image now starts from the very top */
+        object-fit: cover;
+        border-radius: 0; /* No rounded corners — full bleed from top */
+    }
+    .highlights-slider .hero-image-wrapper .floating-element {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin-top: 0.75rem;
+        display: inline-flex;
+        width: auto;
     }
     .highlights-slider .hero-content {
+        order: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
+        padding: 1.25rem 1rem 0 1rem; /* Slightly less padding */
+    }
+    .highlights-slider .badge {
+        order: 1; /* Keep badge at top but smaller margin */
+        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
     }
     .highlights-slider .hero-title {
-        font-size: 2.5rem !important;
-    }
-    .highlights-slider .hero-subtitle {
-        font-size: 1rem !important;
-        max-width: 100%;
+        order: 2;
+        font-size: 2rem !important;
+        margin-bottom: 1rem; /* Reduced from 1.5rem base */
     }
     .highlights-slider .hero-buttons {
+        order: 3;
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+    .highlights-slider .hero-subtitle {
+        order: 4; /* Move details below the buttons */
+        font-size: 0.9rem !important;
+        max-width: 100%;
+        margin-bottom: 1.5rem; /* Reduced from 2.5rem base */
+        line-height: 1.4;
     }
     .highlights-slider .hero-stats {
-        justify-content: center;
-        gap: 2rem;
-    }
-    .highlights-slider .hero-image-wrapper {
-        display: none; /* Hide slide images on tablet/mobile to keep layout clean and prevent overflow */
+        order: 5;
+        justify-content: space-between;
+        gap: 0.25rem;
+        flex-wrap: nowrap;
+        padding: 0;
+        margin-bottom: 0;
+        width: 100%;
     }
     .highlights-slider .slider-dots {
-        bottom: 2rem;
+        bottom: 1.5rem;
     }
 }
 
 @media (max-width: 768px) {
+    /* ---- Navbar: Keep everything on ONE line ---- */
+    .logo-img-full {
+        height: 44px !important; /* Smaller logo on phones */
+    }
+    .navbar.scrolled .logo-img-full {
+        height: 38px !important;
+    }
+    .nav-actions {
+        gap: 0.6rem; /* Tighter gap between actions */
+    }
+    .theme-toggle {
+        width: 34px;
+        height: 34px;
+    }
+    .theme-toggle svg {
+        width: 16px;
+        height: 16px;
+    }
+    .btn.btn-primary[href="#contact"] {
+        padding: 0.55rem 1rem;
+        font-size: 0.85rem;
+    }
+    /* ---- Banner: smaller screens ---- */
     .highlights-slider {
-        min-height: 100vh;
+        min-height: auto;
+        overflow: visible;
+    }
+    .highlights-slider .slide {
+        padding-top: 3.5rem; /* Start directly below navbar (~56px) */
+        padding-bottom: 4rem;
+    }
+    .highlights-slider .hero-image-wrapper .image-card .hero-img {
+        height: 230px;
     }
     .highlights-slider .hero-title {
-        font-size: 2.2rem !important;
+        font-size: 1.7rem !important;
     }
     .highlights-slider .stat-number {
-        font-size: 1.5rem !important;
+        font-size: 0.95rem !important;
+        white-space: nowrap;
+    }
+    .highlights-slider .stat-label {
+        font-size: 0.65rem;
+        white-space: nowrap;
+    }
+    .highlights-slider .hero-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .highlights-slider .hero-buttons .btn {
+        font-size: 0.85rem;
+        padding: 0.7rem 1rem;
+        white-space: normal;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Very small phones: tighten navbar container */
+    .navbar .container {
+        padding: 0 1rem;
+    }
+    .nav-actions {
+        gap: 0.4rem;
+    }
+    .logo-img-full {
+        height: 40px !important;
+    }
+    /* Smaller Book Now button on tiny phones */
+    .nav-actions .btn-primary {
+        padding: 0.45rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    /* Banner image height on very small screens */
+    .highlights-slider .hero-image-wrapper .image-card .hero-img {
+        height: 180px;
+    }
+    .highlights-slider .hero-content {
+        padding: 1.25rem 1rem 0 1rem;
     }
 }
 
