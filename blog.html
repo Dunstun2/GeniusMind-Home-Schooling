@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Genius Minds Homeschooling Blog — tips for parents, curriculum guides, student success stories and homeschooling news from Nairobi.">
+    <meta name="keywords" content="homeschooling blog nairobi, igcse tips kenya, cbc parenting blog, homeschool resources kenya, genius minds news">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://geniusminds.website/blog.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://geniusminds.website/blog.html">
+    <meta property="og:title" content="Blog & News | Genius Minds Homeschooling">
+    <meta property="og:description" content="Read our latest articles, parenting tips, curriculum guides and student success stories.">
+    <meta property="og:image" content="https://geniusminds.website/assets/images/logo-transparent.png">
+    <title>Blog & News | Genius Minds Homeschooling</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/images/logo-favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .inner-hero {
+            padding-top: 9rem;
+            padding-bottom: 5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(249,115,22,0.06) 100%);
+        }
+        .inner-hero::before {
+            content: '';
+            position: absolute; top: -150px; right: -150px;
+            width: 500px; height: 500px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            filter: blur(100px); opacity: 0.25; z-index: 0;
+        }
+        .inner-hero::after {
+            content: '';
+            position: absolute; bottom: -100px; left: -100px;
+            width: 400px; height: 400px;
+            background: var(--secondary-light);
+            border-radius: 50%;
+            filter: blur(90px); opacity: 0.2; z-index: 0;
+        }
+        .inner-hero .container { position: relative; z-index: 1; }
+        .inner-hero .breadcrumb {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .inner-hero .breadcrumb a { color: var(--primary); }
+        .inner-hero h1 { font-size: clamp(2.2rem, 6vw, 3.5rem); font-weight: 800; margin-bottom: 1.25rem; }
+        .inner-hero p { font-size: 1.125rem; color: var(--text-muted); max-width: 620px; margin: 0 auto; }
+
+        .blog-section { padding: 5rem 0; }
+
+        /* Search & filter */
+        .blog-toolbar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+        .blog-search-wrap {
+            flex: 1;
+            min-width: 220px;
+            position: relative;
+        }
+        .blog-search-wrap input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border-radius: 999px;
+            border: 1.5px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+        .blog-search-wrap input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .blog-search-wrap .search-icon {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        .category-filter {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .cat-btn {
+            padding: 0.45rem 1.1rem;
+            border-radius: 999px;
+            border: 1.5px solid var(--border-color);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .cat-btn:hover, .cat-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(79,70,229,0.08);
+        }
+
+        /* Blog grid */
+        #blog-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        /* Newsletter strip */
+        .newsletter-strip {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: var(--border-radius-lg);
+            color: white;
+            text-align: center;
+            padding: 4rem 3rem;
+            margin: 4rem 0 0;
+        }
+        .newsletter-strip h3 { color: white; font-size: 1.75rem; margin-bottom: 0.75rem; }
+        .newsletter-strip p { color: rgba(255,255,255,0.85); margin-bottom: 2rem; }
+        .newsletter-form {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 460px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+        .newsletter-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.85rem 1.25rem;
+            border-radius: 999px;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+        .newsletter-form input:focus { outline: none; }
+        .newsletter-form button {
+            padding: 0.85rem 1.75rem;
+            border-radius: 999px;
+            border: none;
+            background: var(--secondary);
+            color: white;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .newsletter-form button:hover { background: #ea6c0c; transform: translateY(-2px); }
+
+        @media (max-width: 1024px) {
+            #blog-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            #blog-grid { grid-template-columns: 1fr; }
+            .blog-toolbar { flex-direction: column; align-items: stretch; }
+            .blog-search-wrap { min-width: unset; }
+            .newsletter-strip { padding: 2.5rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div id="navbar-placeholder"></div>
+    </nav>
+
+    <!-- Inner Hero -->
+    <section class="inner-hero">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a>
+                <span>›</span>
+                <span>Blog & News</span>
+            </div>
+            <div class="badge">Insights & Stories</div>
+            <h1>Blog & <span>News</span></h1>
+            <p>Parenting tips, curriculum guides, student success stories, and the latest from the Genius Minds community.</p>
+        </div>
+    </section>
+
+    <!-- Blog Grid -->
+    <section id="blog-page-container" class="blog-section">
+        <div class="container">
+            <!-- Toolbar: search + category filter -->
+            <div class="blog-toolbar">
+                <div class="blog-search-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="blog-search" placeholder="Search articles..." autocomplete="off">
+                </div>
+                <div class="category-filter" id="category-filter">
+                    <button class="cat-btn active" data-cat="all">All</button>
+                </div>
+            </div>
+
+            <!-- Blog posts injected here by script.js -->
+            <div id="blog-grid">
+                <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Loading articles...</div>
+            </div>
+
+            <!-- Newsletter -->
+            <div class="newsletter-strip">
+                <h3>📬 Stay Updated</h3>
+                <p>Subscribe to get our latest articles, tips, and programme announcements directly in your inbox.</p>
+                <form class="newsletter-form" onsubmit="handleNewsletter(event)">
+                    <input type="email" id="nl-email" placeholder="Enter your email address" required>
+                    <button type="submit">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div id="footer-placeholder"></div>
+    </footer>
+
+    <script src="analytics.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Client-side blog search + category filter
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('blog-search');
+            const categoryFilter = document.getElementById('category-filter');
+            const blogGrid = document.getElementById('blog-grid');
+
+            let activeCategory = 'all';
+
+            // Observe for when blog posts are loaded
+            const observer = new MutationObserver(() => {
+                buildCategoryButtons();
+                attachFilters();
+            });
+            if (blogGrid) observer.observe(blogGrid, { childList: true });
+
+            function buildCategoryButtons() {
+                const articles = blogGrid ? blogGrid.querySelectorAll('article') : [];
+                if (articles.length === 0) return;
+
+                const cats = new Set(['all']);
+                articles.forEach(a => {
+                    const catEl = a.querySelector('span[style*="position:absolute"]');
+                    if (catEl) cats.add(catEl.textContent.trim());
+                });
+
+                categoryFilter.innerHTML = '';
+                cats.forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = 'cat-btn' + (cat === activeCategory ? ' active' : '');
+                    btn.setAttribute('data-cat', cat);
+                    btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                    categoryFilter.appendChild(btn);
+                });
+
+                categoryFilter.querySelectorAll('.cat-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        categoryFilter.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        activeCategory = btn.getAttribute('data-cat');
+                        applyFilter();
+                    });
+                });
+            }
+
+            function attachFilters() {
+                if (searchInput) {
+                    searchInput.removeEventListener('input', applyFilter);
+                    searchInput.addEventListener('input', applyFilter);
+                }
+            }
+
+            function applyFilter() {
+                const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                const articles = blogGrid ? blogGrid.querySelectorAll('article') : [];
+                articles.forEach(a => {
+                    const text = a.textContent.toLowerCase();
+                    const catEl = a.querySelector('span[style*="position:absolute"]');
+                    const cat = catEl ? catEl.textContent.trim().toLowerCase() : '';
+
+                    const matchesSearch = !q || text.includes(q);
+                    const matchesCat = activeCategory === 'all' || cat === activeCategory.toLowerCase();
+                    a.style.display = (matchesSearch && matchesCat) ? '' : 'none';
+                });
+            }
+        });
+
+        function handleNewsletter(e) {
+            e.preventDefault();
+            const email = document.getElementById('nl-email').value;
+            alert('Thank you for subscribing! We\'ll be in touch at ' + email);
+            e.target.reset();
+        }
+    </script>
+</body>
+</html>

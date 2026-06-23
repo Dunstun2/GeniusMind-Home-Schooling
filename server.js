@@ -124,7 +124,17 @@ const memDb = {
     analytics_events: [],
     booking_messages: [],
     admin_users: [],
-    highlights_banners: []
+    highlights_banners: [],
+    site_settings: [
+        { setting_key: 'contact_phone', setting_value: '+254 743-322-975' },
+        { setting_key: 'contact_email', setting_value: 'geniusminds2425@gmail.com' },
+        { setting_key: 'contact_location', setting_value: 'Nairobi, Kenya' }
+    ],
+    team_members: [],
+    courses: [],
+    faqs: [],
+    blog_posts: [],
+    page_content: []
 };
 
 // Default dynamic homepage highlights banners seed data
@@ -496,6 +506,189 @@ const db = {
                 return { affectedRows: initialLength - memDb.highlights_banners.length };
             }
 
+            // --- Site Settings ---
+            if (sqlUpper.startsWith('SELECT SETTING_KEY, SETTING_VALUE FROM SITE_SETTINGS')) {
+                return [...memDb.site_settings];
+            }
+
+            // --- Team Members ---
+            if (sqlUpper.startsWith('SELECT * FROM TEAM_MEMBERS')) {
+                return [...memDb.team_members].sort((a, b) => a.display_order - b.display_order);
+            }
+            if (sqlUpper.startsWith('INSERT INTO TEAM_MEMBERS')) {
+                const id = memDb.team_members.length + 1;
+                const record = {
+                    id,
+                    name: params[0],
+                    role: params[1],
+                    bio: params[2],
+                    image_url: params[3],
+                    display_order: parseInt(params[4]) || 0
+                };
+                memDb.team_members.push(record);
+                return { insertId: id };
+            }
+            if (sqlUpper.startsWith('UPDATE TEAM_MEMBERS SET')) {
+                const id = params[5];
+                const record = memDb.team_members.find(t => t.id == id);
+                if (record) {
+                    record.name = params[0];
+                    record.role = params[1];
+                    record.bio = params[2];
+                    record.image_url = params[3];
+                    record.display_order = parseInt(params[4]) || 0;
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+            if (sqlUpper.startsWith('DELETE FROM TEAM_MEMBERS')) {
+                const id = params[0];
+                const initialLength = memDb.team_members.length;
+                memDb.team_members = memDb.team_members.filter(t => t.id != id);
+                return { affectedRows: initialLength - memDb.team_members.length };
+            }
+
+            // --- Courses ---
+            if (sqlUpper.startsWith('SELECT * FROM COURSES')) {
+                return [...memDb.courses];
+            }
+            if (sqlUpper.startsWith('INSERT INTO COURSES')) {
+                const id = memDb.courses.length + 1;
+                const record = {
+                    id,
+                    title: params[0],
+                    grade_levels: params[1],
+                    subjects: params[2],
+                    description: params[3],
+                    duration: params[4],
+                    fees: params[5],
+                    outcomes: params[6]
+                };
+                memDb.courses.push(record);
+                return { insertId: id };
+            }
+            if (sqlUpper.startsWith('UPDATE COURSES SET')) {
+                const id = params[7];
+                const record = memDb.courses.find(c => c.id == id);
+                if (record) {
+                    record.title = params[0];
+                    record.grade_levels = params[1];
+                    record.subjects = params[2];
+                    record.description = params[3];
+                    record.duration = params[4];
+                    record.fees = params[5];
+                    record.outcomes = params[6];
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+            if (sqlUpper.startsWith('DELETE FROM COURSES')) {
+                const id = params[0];
+                const initialLength = memDb.courses.length;
+                memDb.courses = memDb.courses.filter(c => c.id != id);
+                return { affectedRows: initialLength - memDb.courses.length };
+            }
+
+            // --- FAQs ---
+            if (sqlUpper.startsWith('SELECT * FROM FAQS')) {
+                return [...memDb.faqs].sort((a, b) => a.display_order - b.display_order);
+            }
+            if (sqlUpper.startsWith('INSERT INTO FAQS')) {
+                const id = memDb.faqs.length + 1;
+                const record = {
+                    id,
+                    question: params[0],
+                    answer: params[1],
+                    category: params[2],
+                    display_order: parseInt(params[3]) || 0
+                };
+                memDb.faqs.push(record);
+                return { insertId: id };
+            }
+            if (sqlUpper.startsWith('UPDATE FAQS SET')) {
+                const id = params[4];
+                const record = memDb.faqs.find(f => f.id == id);
+                if (record) {
+                    record.question = params[0];
+                    record.answer = params[1];
+                    record.category = params[2];
+                    record.display_order = parseInt(params[3]) || 0;
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+            if (sqlUpper.startsWith('DELETE FROM FAQS')) {
+                const id = params[0];
+                const initialLength = memDb.faqs.length;
+                memDb.faqs = memDb.faqs.filter(f => f.id != id);
+                return { affectedRows: initialLength - memDb.faqs.length };
+            }
+
+            // --- Blog Posts ---
+            if (sqlUpper.startsWith('SELECT * FROM BLOG_POSTS')) {
+                return [...memDb.blog_posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+            if (sqlUpper.startsWith('INSERT INTO BLOG_POSTS')) {
+                const id = memDb.blog_posts.length + 1;
+                const record = {
+                    id,
+                    title: params[0],
+                    excerpt: params[1],
+                    content: params[2],
+                    author: params[3],
+                    category: params[4],
+                    image_url: params[5],
+                    created_at: new Date()
+                };
+                memDb.blog_posts.push(record);
+                return { insertId: id };
+            }
+            if (sqlUpper.startsWith('UPDATE BLOG_POSTS SET')) {
+                const id = params[6];
+                const record = memDb.blog_posts.find(b => b.id == id);
+                if (record) {
+                    record.title = params[0];
+                    record.excerpt = params[1];
+                    record.content = params[2];
+                    record.author = params[3];
+                    record.category = params[4];
+                    record.image_url = params[5];
+                    return { affectedRows: 1 };
+                }
+                return { affectedRows: 0 };
+            }
+            if (sqlUpper.startsWith('DELETE FROM BLOG_POSTS')) {
+                const id = params[0];
+                const initialLength = memDb.blog_posts.length;
+                memDb.blog_posts = memDb.blog_posts.filter(b => b.id != id);
+                return { affectedRows: initialLength - memDb.blog_posts.length };
+            }
+
+            // --- Page Content ---
+            if (sqlUpper.startsWith('SELECT * FROM PAGE_CONTENT')) {
+                return [...memDb.page_content];
+            }
+            if (sqlUpper.startsWith('INSERT INTO PAGE_CONTENT') || sqlUpper.startsWith('INSERT OR REPLACE INTO PAGE_CONTENT')) {
+                const key = params[0];
+                const val = params[1];
+                const existing = memDb.page_content.find(p => p.content_key === key);
+                if (existing) {
+                    existing.content_value = val;
+                    existing.updated_at = new Date();
+                    return { affectedRows: 1 };
+                } else {
+                    const id = memDb.page_content.length + 1;
+                    memDb.page_content.push({
+                        id,
+                        content_key: key,
+                        content_value: val,
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    });
+                    return { insertId: id };
+                }
+            }
+
             return [];
         }
     }
@@ -654,6 +847,64 @@ async function initDatabase() {
                     is_active TINYINT DEFAULT 1,
                     start_date DATETIME DEFAULT NULL,
                     end_date DATETIME DEFAULT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS team_members (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    role VARCHAR(255) NOT NULL,
+                    bio TEXT DEFAULT NULL,
+                    image_url VARCHAR(500) DEFAULT NULL,
+                    display_order INT DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS courses (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    grade_levels VARCHAR(255) DEFAULT NULL,
+                    subjects TEXT DEFAULT NULL,
+                    description TEXT DEFAULT NULL,
+                    duration VARCHAR(255) DEFAULT NULL,
+                    fees VARCHAR(255) DEFAULT NULL,
+                    outcomes TEXT DEFAULT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS faqs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    question TEXT NOT NULL,
+                    answer TEXT NOT NULL,
+                    category VARCHAR(255) DEFAULT NULL,
+                    display_order INT DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS blog_posts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    excerpt TEXT DEFAULT NULL,
+                    content LONGTEXT DEFAULT NULL,
+                    author VARCHAR(255) DEFAULT NULL,
+                    category VARCHAR(255) DEFAULT NULL,
+                    image_url VARCHAR(500) DEFAULT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS page_content (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    content_key VARCHAR(255) NOT NULL,
+                    content_value TEXT DEFAULT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY idx_content_key (content_key)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
@@ -833,6 +1084,80 @@ async function initDatabase() {
                     )
                 `);
 
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS site_settings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        setting_key TEXT UNIQUE NOT NULL,
+                        setting_value TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS team_members (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        bio TEXT,
+                        image_url TEXT,
+                        display_order INTEGER DEFAULT 0
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS courses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        grade_levels TEXT,
+                        subjects TEXT,
+                        description TEXT,
+                        duration TEXT,
+                        fees TEXT,
+                        outcomes TEXT
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS faqs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        question TEXT NOT NULL,
+                        answer TEXT NOT NULL,
+                        category TEXT,
+                        display_order INTEGER DEFAULT 0
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS blog_posts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        excerpt TEXT,
+                        content TEXT,
+                        author TEXT,
+                        category TEXT,
+                        image_url TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    CREATE TABLE IF NOT EXISTS page_content (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        content_key TEXT UNIQUE NOT NULL,
+                        content_value TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await dbConnection.run(`
+                    INSERT OR IGNORE INTO site_settings (setting_key, setting_value) VALUES 
+                    ('contact_phone', '+254 743-322-975'),
+                    ('contact_email', 'geniusminds2425@gmail.com'),
+                    ('contact_location', 'Nairobi, Kenya')
+                `);
+
                 // Seed default banners in SQLite if empty
                 const bannerCount = await dbConnection.get('SELECT COUNT(*) as count FROM highlights_banners');
                 if (bannerCount.count === 0) {
@@ -872,6 +1197,92 @@ async function initDatabase() {
         } else {
             console.warn('⚠️ [Development] SQLite driver not available. Falling back to IN-MEMORY storage.');
         }
+        
+        // Seed default CMS data
+        await seedDefaultCMSData();
+    }
+}
+
+// Helper to seed default CMS data if tables are empty
+async function seedDefaultCMSData() {
+    try {
+        // 1. Team Members
+        const team = await db.query('SELECT * FROM team_members');
+        if (team.length === 0) {
+            await db.query('INSERT INTO team_members (name, role, bio, image_url, display_order) VALUES (?, ?, ?, ?, ?)',
+                ['Esther W.', 'Lead Science & Mathematics Tutor', 'Esther is a passionate educator with over 8 years of tutoring experience in the British IGCSE curriculum. She holds a B.Ed. in Mathematics & Physics.', 'assets/images/team-1.jpg', 1]
+            );
+            await db.query('INSERT INTO team_members (name, role, bio, image_url, display_order) VALUES (?, ?, ?, ?, ?)',
+                ['David N.', 'Primary CBC Specialist', 'David specializes in active learning and competency-based curriculum development. He has helped dozens of primary learners build confidence in mathematics and technology.', 'assets/images/team-2.jpg', 2]
+            );
+            await db.query('INSERT INTO team_members (name, role, bio, image_url, display_order) VALUES (?, ?, ?, ?, ?)',
+                ['Grace M.', 'English & Languages Tutor', 'Grace is a certified ESL trainer and literature enthusiast. She works with secondary students on writing excellence, comprehension skills, and literary analysis.', 'assets/images/team-3.jpg', 3]
+            );
+            console.log('✨ Seeded default CMS Team Members.');
+        }
+
+        // 2. Courses
+        const courses = await db.query('SELECT * FROM courses');
+        if (courses.length === 0) {
+            await db.query('INSERT INTO courses (title, grade_levels, subjects, description, duration, fees, outcomes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                ['IGCSE Prep & Support', 'Year 9 - Year 11 (High School)', 'Mathematics, Physics, Chemistry, Biology, English', 'Comprehensive preparation for IGCSE board examinations. Includes past paper practice, mock testing, and conceptual breakdown.', 'Flexible (hourly/weekly)', 'From KES 2,500/hour', 'Thorough understanding of syllabus, exam confidence, and top grades.']
+            );
+            await db.query('INSERT INTO courses (title, grade_levels, subjects, description, duration, fees, outcomes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                ['CBC / CBE Enrichment', 'Grade 1 - Grade 9', 'Core CBE Subjects, Mathematics, Science & Tech', 'Hands-on, competency-based support to reinforce school learning and complete project tasks efficiently.', 'Flexible (hourly/weekly)', 'From KES 1,800/hour', 'Enhanced creative and critical thinking, timely project completion.']
+            );
+            await db.query('INSERT INTO courses (title, grade_levels, subjects, description, duration, fees, outcomes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                ['8-4-4 / KCSE Support', 'Primary & Secondary', 'Mathematics, Sciences, English, Kiswahili', 'Traditional system support focusing on KCSE exam success and reinforcing core concepts.', 'Flexible (hourly/weekly)', 'From KES 1,800/hour', 'High score targets, solid subject foundation.']
+            );
+            console.log('✨ Seeded default CMS Courses.');
+        }
+
+        // 3. FAQs
+        const faqs = await db.query('SELECT * FROM faqs');
+        if (faqs.length === 0) {
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['How do I get started with Genius Minds?', 'Getting started is simple! Just fill out our booking form at the bottom of the page or call us directly. We will schedule a free initial assessment to understand your child\'s needs and match them with the perfect tutor.', 'General', 1]
+            );
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['Do you offer physical in-person home tutoring or online classes?', 'We offer both! We provide in-person tutoring where our qualified tutors visit your home in Nairobi (Karen, Runda, Westlands, Kilimani, etc.), online interactive tutoring for students globally, and physical classes at our structured learning center.', 'Programs', 2]
+            );
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['Which curricula do you support?', 'We support all major curricula, including British International (IGCSE/GCSE), Competency-Based Curriculum (CBC), the traditional Kenyan 8-4-4 system, and the US Curriculum.', 'Curriculum', 3]
+            );
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['How are your tutors selected and vetted?', 'All our tutors are university graduates, certified educators, or subject-matter experts. They undergo rigorous background checks, reference checks, and interview vetting to ensure safety, reliability, and academic excellence.', 'Tutors', 4]
+            );
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['Can we schedule classes on weekends or evenings?', 'Yes, our schedules are highly flexible. We customize tutoring sessions to fit your family\'s routine, offering classes during weekdays, evenings, or weekends.', 'Scheduling', 5]
+            );
+            await db.query('INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+                ['How do you track my child\'s academic progress?', 'We provide detailed weekly progress reports to parents, regular mock assessments to track understanding, and continuous feedback directly from the tutor after each session.', 'Assessment', 6]
+            );
+            console.log('✨ Seeded default CMS FAQs.');
+        }
+
+        // 4. Blog Posts
+        const blogs = await db.query('SELECT * FROM blog_posts');
+        if (blogs.length === 0) {
+            await db.query('INSERT INTO blog_posts (title, excerpt, content, author, category, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+                ['The Rise of Homeschooling in Kenya', 'Why more parents in Nairobi are opting for personalized homeschooling programs for their children.', 'Homeschooling is rapidly growing in popularity across Kenya. Parents seek flexible scheduling, customized pacing, safety, and a focused environment. Our systems, like IGCSE and CBC, adapt perfectly to home tutoring. By matching students with certified tutors who understand the specific curriculum, we make transition seamless and results outstanding.', 'Admin Team', 'Education Trends', 'assets/images/blog-1.jpg']
+            );
+            await db.query('INSERT INTO blog_posts (title, excerpt, content, author, category, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+                ['Tips for Preparing Your Child for IGCSE Exams', 'Practical strategies and study tips from our lead mathematics and sciences tutors to boost exam performance.', 'Preparing for IGCSE board exams requires a structured revision plan, extensive practice with past papers, and continuous feedback. Here are the top five strategies recommended by our instructors:\n\n1. Start early: Do not wait until the final months.\n2. Do active recall: Test knowledge rather than passively reading.\n3. Master past papers: Understand examiner mark schemes.\n4. Build exam stamina: Take timed mock tests.\n5. Address weak spots immediately: Work one-on-one with a tutor.', 'Esther W.', 'Study Tips', 'assets/images/blog-2.jpg']
+            );
+            console.log('✨ Seeded default CMS Blog Posts.');
+        }
+
+        // 5. Page Content
+        const content = await db.query('SELECT * FROM page_content');
+        if (content.length === 0) {
+            await db.query('INSERT INTO page_content (content_key, content_value) VALUES (?, ?)', ['mission_statement', 'Dedicated to providing high-quality and affordable tutoring services for learners of all ages.']);
+            await db.query('INSERT INTO page_content (content_key, content_value) VALUES (?, ?)', ['vision', 'To be the leading personalized homeschooling partner in East Africa, unlocking every student\'s full potential.']);
+            await db.query('INSERT INTO page_content (content_key, content_value) VALUES (?, ?)', ['history', 'Genius Minds Homeschooling was founded to bridge learning gaps for students in Nairobi. Starting with a few local students, we have expanded to support over 120+ families both locally and internationally, providing high-standard tutoring across various systems.']);
+            await db.query('INSERT INTO page_content (content_key, content_value) VALUES (?, ?)', ['teaching_philosophy', 'We believe education is not one-size-fits-all. Our approach centers on personalized instruction, building confidence, practical skill acquisition, and close parent-tutor communication.']);
+            console.log('✨ Seeded default CMS Page Content.');
+        }
+    } catch (err) {
+        console.error('⚠️ Error seeding default CMS data:', err);
     }
 }
 
@@ -1645,6 +2056,145 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
     }
 });
 
+// ==========================================
+// WHATSAPP INTEGRATION & BOOKING CHAT
+// ==========================================
+
+// Get WhatsApp Status
+app.get('/api/admin/whatsapp/status', requireAdmin, (req, res) => {
+    res.json(whatsappService.getStatus());
+});
+
+// Disconnect WhatsApp
+app.post('/api/admin/whatsapp/disconnect', requireAdmin, async (req, res) => {
+    try {
+        await whatsappService.disconnect();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error disconnecting WhatsApp:', err);
+        res.status(500).json({ error: 'Failed to disconnect WhatsApp.' });
+    }
+});
+
+// Retrieve Booking Messages (Chat)
+app.get('/api/admin/bookings/:id/messages', requireAdmin, async (req, res) => {
+    const bookingId = req.params.id;
+    try {
+        const messages = await db.query('SELECT * FROM booking_messages WHERE booking_id = ? ORDER BY created_at ASC', [bookingId]);
+        res.json(messages);
+    } catch (err) {
+        console.error('Error fetching booking messages:', err);
+        res.status(500).json({ error: 'Failed to fetch messages.' });
+    }
+});
+
+// Send Admin Message (Chat)
+app.post('/api/admin/bookings/:id/messages', requireAdmin, upload.single('attachment'), async (req, res) => {
+    const bookingId = req.params.id;
+    const { message } = req.body;
+    let attachmentUrl = null;
+    let attachmentName = null;
+    
+    if (req.file) {
+        attachmentUrl = `/uploads/${req.file.filename}`;
+        attachmentName = req.file.originalname;
+    }
+    
+    if (!message && !attachmentUrl) {
+        return res.status(400).json({ error: 'Message or attachment is required.' });
+    }
+    
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Booking not found.' });
+        const booking = bookings[0];
+        
+        await db.query(`
+            INSERT INTO booking_messages (booking_id, sender, message, attachment_url, attachment_name) 
+            VALUES (?, ?, ?, ?, ?)`, 
+            [bookingId, 'admin', message || '', attachmentUrl, attachmentName]
+        );
+        
+        // Notify user via WhatsApp
+        let waMsg = `*Genius Minds Admin:*\n\n${message}`;
+        if (attachmentUrl) {
+            waMsg += `\n\n[Attached: ${attachmentName}]`;
+        }
+        if (booking.tracking_token) {
+            waMsg += `\n\nTrack your booking here: https://geniusminds.website/track.html?token=${booking.tracking_token}`;
+        }
+        
+        whatsappService.sendMessage(booking.phone, waMsg);
+        
+        res.status(201).json({ success: true });
+    } catch (err) {
+        console.error('Error saving admin message:', err);
+        res.status(500).json({ error: 'Failed to save message.' });
+    }
+});
+
+// ==========================================
+// PUBLIC BOOKING TRACKING (track.html)
+// ==========================================
+
+// Get Booking & Messages by Tracking Token
+app.get('/api/booking/track/:token', async (req, res) => {
+    const token = req.params.token;
+    if (!token) return res.status(400).json({ error: 'Tracking token is required.' });
+
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE tracking_token = ?', [token]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Booking not found.' });
+        
+        const booking = bookings[0];
+        const messages = await db.query('SELECT * FROM booking_messages WHERE booking_id = ? ORDER BY created_at ASC', [booking.id]);
+        
+        res.json({ booking, messages });
+    } catch (err) {
+        console.error('Error fetching tracking data:', err);
+        res.status(500).json({ error: 'Failed to load tracking data.' });
+    }
+});
+
+// Post Message from Customer via Tracking Portal
+app.post('/api/booking/track/:token/message', upload.single('attachment'), async (req, res) => {
+    const token = req.params.token;
+    const { message } = req.body;
+    let attachmentUrl = null;
+    let attachmentName = null;
+
+    if (req.file) {
+        attachmentUrl = `/uploads/${req.file.filename}`;
+        attachmentName = req.file.originalname;
+    }
+
+    if (!message && !attachmentUrl) {
+        return res.status(400).json({ error: 'Message or attachment is required.' });
+    }
+
+    try {
+        const bookings = await db.query('SELECT * FROM bookings WHERE tracking_token = ?', [token]);
+        if (bookings.length === 0) return res.status(404).json({ error: 'Booking not found.' });
+        
+        const booking = bookings[0];
+        
+        await db.query(`
+            INSERT INTO booking_messages (booking_id, sender, message, attachment_url, attachment_name) 
+            VALUES (?, ?, ?, ?, ?)`, 
+            [booking.id, 'customer', message || '', attachmentUrl, attachmentName]
+        );
+        
+        // Notify admin via WhatsApp (if admin's number was known, but we'll let it just appear in the portal)
+        // Or if the system sends an email to the admin:
+        // sendEmailNotificationToAdmin(`New message from ${booking.name} on booking #${booking.id}`, message);
+        
+        res.status(201).json({ success: true });
+    } catch (err) {
+        console.error('Error saving customer message:', err);
+        res.status(500).json({ error: 'Failed to save message.' });
+    }
+});
+
 // Sync emails via IMAP
 app.get('/api/admin/emails/sync', requireAdmin, async (req, res) => {
     try {
@@ -1924,6 +2474,466 @@ app.patch('/api/admin/banners/:id/toggle', requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('Error toggling banner visibility:', err);
         res.status(500).json({ error: 'Failed to toggle banner visibility.' });
+    }
+});
+
+// ==========================================
+// SITE SETTINGS APIs
+// ==========================================
+
+// Public: Get Settings
+app.get('/api/settings', async (req, res) => {
+    try {
+        const settingsArr = await db.query('SELECT setting_key, setting_value FROM site_settings');
+        // Convert array to key-value map
+        const settings = {};
+        settingsArr.forEach(s => settings[s.setting_key] = s.setting_value);
+        res.json(settings);
+    } catch (err) {
+        console.error('Error fetching public settings:', err);
+        res.status(500).json({ error: 'Failed to load settings.' });
+    }
+});
+
+// Admin: Get Settings
+app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+    try {
+        const settingsArr = await db.query('SELECT setting_key, setting_value FROM site_settings');
+        const settings = {};
+        settingsArr.forEach(s => settings[s.setting_key] = s.setting_value);
+        res.json(settings);
+    } catch (err) {
+        console.error('Error fetching admin settings:', err);
+        res.status(500).json({ error: 'Failed to load settings.' });
+    }
+});
+
+// Admin: Update Settings
+app.put('/api/admin/settings', requireAdmin, async (req, res) => {
+    const newSettings = req.body;
+    try {
+        for (const [key, value] of Object.entries(newSettings)) {
+            // Upsert mechanism depending on database driver
+            if (dbMode === 'memory') {
+                const existing = memDb.site_settings.find(s => s.setting_key === key);
+                if (existing) {
+                    existing.setting_value = value;
+                } else {
+                    memDb.site_settings.push({ setting_key: key, setting_value: value });
+                }
+            } else if (dbMode === 'sqlite') {
+                await dbConnection.run(
+                    'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = ?, updated_at = CURRENT_TIMESTAMP',
+                    [key, value, value]
+                );
+            } else if (dbMode === 'mysql') {
+                await dbPool.query(
+                    'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                    [key, value, value]
+                );
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating settings:', err);
+        res.status(500).json({ error: 'Failed to update settings.' });
+    }
+});
+
+// ==========================================
+// CUSTOM CMS API ENDPOINTS
+// ==========================================
+
+// --- 1. TEAM MEMBERS ---
+
+// Public: Get all team members
+app.get('/api/team', async (req, res) => {
+    try {
+        const team = await db.query('SELECT * FROM team_members ORDER BY display_order ASC');
+        res.json(team);
+    } catch (err) {
+        console.error('Error fetching team members:', err);
+        res.status(500).json({ error: 'Failed to retrieve team members.' });
+    }
+});
+
+// Admin: Get all team members
+app.get('/api/admin/team', requireAdmin, async (req, res) => {
+    try {
+        const team = await db.query('SELECT * FROM team_members ORDER BY display_order ASC');
+        res.json(team);
+    } catch (err) {
+        console.error('Error fetching admin team members:', err);
+        res.status(500).json({ error: 'Failed to retrieve team members.' });
+    }
+});
+
+// Admin: Create team member
+app.post('/api/admin/team', requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const { name, role, bio, display_order } = req.body;
+        if (!name || !role) {
+            return res.status(400).json({ error: 'Name and role are required.' });
+        }
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || null);
+        const result = await db.query(
+            'INSERT INTO team_members (name, role, bio, image_url, display_order) VALUES (?, ?, ?, ?, ?)',
+            [name, role, bio || null, imageUrl, parseInt(display_order) || 0]
+        );
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error creating team member:', err);
+        res.status(500).json({ error: 'Failed to create team member.' });
+    }
+});
+
+// Admin: Update team member
+app.put('/api/admin/team/:id', requireAdmin, upload.single('image'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { name, role, bio, display_order } = req.body;
+        if (!name || !role) {
+            return res.status(400).json({ error: 'Name and role are required.' });
+        }
+        const team = await db.query('SELECT * FROM team_members');
+        const member = team.find(t => t.id == id);
+        if (!member) return res.status(404).json({ error: 'Team member not found.' });
+
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || member.image_url);
+        await db.query(
+            'UPDATE team_members SET name = ?, role = ?, bio = ?, image_url = ?, display_order = ? WHERE id = ?',
+            [name, role, bio || null, imageUrl, parseInt(display_order) || 0, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating team member:', err);
+        res.status(500).json({ error: 'Failed to update team member.' });
+    }
+});
+
+// Admin: Delete team member
+app.delete('/api/admin/team/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM team_members WHERE id = ?', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting team member:', err);
+        res.status(500).json({ error: 'Failed to delete team member.' });
+    }
+});
+
+// --- 2. COURSES ---
+
+// Public: Get all courses
+app.get('/api/courses', async (req, res) => {
+    try {
+        const courses = await db.query('SELECT * FROM courses');
+        res.json(courses);
+    } catch (err) {
+        console.error('Error fetching courses:', err);
+        res.status(500).json({ error: 'Failed to retrieve courses.' });
+    }
+});
+
+// Admin: Get all courses
+app.get('/api/admin/courses', requireAdmin, async (req, res) => {
+    try {
+        const courses = await db.query('SELECT * FROM courses');
+        res.json(courses);
+    } catch (err) {
+        console.error('Error fetching admin courses:', err);
+        res.status(500).json({ error: 'Failed to retrieve courses.' });
+    }
+});
+
+// Admin: Create course
+app.post('/api/admin/courses', requireAdmin, async (req, res) => {
+    try {
+        const { title, grade_levels, subjects, description, duration, fees, outcomes } = req.body;
+        if (!title) return res.status(400).json({ error: 'Title is required.' });
+        const result = await db.query(
+            'INSERT INTO courses (title, grade_levels, subjects, description, duration, fees, outcomes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [title, grade_levels || null, subjects || null, description || null, duration || null, fees || null, outcomes || null]
+        );
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error creating course:', err);
+        res.status(500).json({ error: 'Failed to create course.' });
+    }
+});
+
+// Admin: Update course
+app.put('/api/admin/courses/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { title, grade_levels, subjects, description, duration, fees, outcomes } = req.body;
+        if (!title) return res.status(400).json({ error: 'Title is required.' });
+
+        const courses = await db.query('SELECT * FROM courses');
+        const course = courses.find(c => c.id == id);
+        if (!course) return res.status(404).json({ error: 'Course not found.' });
+
+        await db.query(
+            'UPDATE courses SET title = ?, grade_levels = ?, subjects = ?, description = ?, duration = ?, fees = ?, outcomes = ? WHERE id = ?',
+            [title, grade_levels || null, subjects || null, description || null, duration || null, fees || null, outcomes || null, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating course:', err);
+        res.status(500).json({ error: 'Failed to update course.' });
+    }
+});
+
+// Admin: Delete course
+app.delete('/api/admin/courses/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM courses WHERE id = ?', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting course:', err);
+        res.status(500).json({ error: 'Failed to delete course.' });
+    }
+});
+
+// --- 3. FAQS ---
+
+// Public: Get all FAQs
+app.get('/api/faqs', async (req, res) => {
+    try {
+        const faqs = await db.query('SELECT * FROM faqs ORDER BY display_order ASC');
+        res.json(faqs);
+    } catch (err) {
+        console.error('Error fetching FAQs:', err);
+        res.status(500).json({ error: 'Failed to retrieve FAQs.' });
+    }
+});
+
+// Admin: Get all FAQs
+app.get('/api/admin/faqs', requireAdmin, async (req, res) => {
+    try {
+        const faqs = await db.query('SELECT * FROM faqs ORDER BY display_order ASC');
+        res.json(faqs);
+    } catch (err) {
+        console.error('Error fetching admin FAQs:', err);
+        res.status(500).json({ error: 'Failed to retrieve FAQs.' });
+    }
+});
+
+// Admin: Create FAQ
+app.post('/api/admin/faqs', requireAdmin, async (req, res) => {
+    try {
+        const { question, answer, category, display_order } = req.body;
+        if (!question || !answer) {
+            return res.status(400).json({ error: 'Question and answer are required.' });
+        }
+        const result = await db.query(
+            'INSERT INTO faqs (question, answer, category, display_order) VALUES (?, ?, ?, ?)',
+            [question, answer, category || 'General', parseInt(display_order) || 0]
+        );
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error creating FAQ:', err);
+        res.status(500).json({ error: 'Failed to create FAQ.' });
+    }
+});
+
+// Admin: Update FAQ
+app.put('/api/admin/faqs/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { question, answer, category, display_order } = req.body;
+        if (!question || !answer) {
+            return res.status(400).json({ error: 'Question and answer are required.' });
+        }
+        const faqs = await db.query('SELECT * FROM faqs');
+        const faq = faqs.find(f => f.id == id);
+        if (!faq) return res.status(404).json({ error: 'FAQ not found.' });
+
+        await db.query(
+            'UPDATE faqs SET question = ?, answer = ?, category = ?, display_order = ? WHERE id = ?',
+            [question, answer, category || 'General', parseInt(display_order) || 0, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating FAQ:', err);
+        res.status(500).json({ error: 'Failed to update FAQ.' });
+    }
+});
+
+// Admin: Delete FAQ
+app.delete('/api/admin/faqs/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM faqs WHERE id = ?', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting FAQ:', err);
+        res.status(500).json({ error: 'Failed to delete FAQ.' });
+    }
+});
+
+// --- 4. BLOG POSTS ---
+
+// Public: Get all blog posts
+app.get('/api/blog', async (req, res) => {
+    try {
+        const blogs = await db.query('SELECT * FROM blog_posts ORDER BY created_at DESC');
+        res.json(blogs);
+    } catch (err) {
+        console.error('Error fetching blog posts:', err);
+        res.status(500).json({ error: 'Failed to retrieve blog posts.' });
+    }
+});
+
+// Public: Get single blog post
+app.get('/api/blog/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const blogs = await db.query('SELECT * FROM blog_posts');
+        const post = blogs.find(b => b.id == id);
+        if (!post) return res.status(404).json({ error: 'Blog post not found.' });
+        res.json(post);
+    } catch (err) {
+        console.error('Error fetching blog post:', err);
+        res.status(500).json({ error: 'Failed to retrieve blog post.' });
+    }
+});
+
+// Admin: Get all blog posts
+app.get('/api/admin/blog', requireAdmin, async (req, res) => {
+    try {
+        const blogs = await db.query('SELECT * FROM blog_posts ORDER BY created_at DESC');
+        res.json(blogs);
+    } catch (err) {
+        console.error('Error fetching admin blogs:', err);
+        res.status(500).json({ error: 'Failed to retrieve blogs.' });
+    }
+});
+
+// Admin: Create blog post
+app.post('/api/admin/blog', requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const { title, excerpt, content, author, category } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Title and content are required.' });
+        }
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || null);
+        const result = await db.query(
+            'INSERT INTO blog_posts (title, excerpt, content, author, category, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+            [title, excerpt || null, content, author || 'Admin', category || 'General', imageUrl]
+        );
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error creating blog post:', err);
+        res.status(500).json({ error: 'Failed to create blog post.' });
+    }
+});
+
+// Admin: Update blog post
+app.put('/api/admin/blog/:id', requireAdmin, upload.single('image'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { title, excerpt, content, author, category } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Title and content are required.' });
+        }
+        const blogs = await db.query('SELECT * FROM blog_posts');
+        const post = blogs.find(b => b.id == id);
+        if (!post) return res.status(404).json({ error: 'Blog post not found.' });
+
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || post.image_url);
+        await db.query(
+            'UPDATE blog_posts SET title = ?, excerpt = ?, content = ?, author = ?, category = ?, image_url = ? WHERE id = ?',
+            [title, excerpt || null, content, author || 'Admin', category || 'General', imageUrl, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating blog post:', err);
+        res.status(500).json({ error: 'Failed to update blog post.' });
+    }
+});
+
+// Admin: Delete blog post
+app.delete('/api/admin/blog/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM blog_posts WHERE id = ?', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting blog post:', err);
+        res.status(500).json({ error: 'Failed to delete blog post.' });
+    }
+});
+
+// --- 5. PAGE CONTENT (Key-Value) ---
+
+// Public: Get all page content
+app.get('/api/content', async (req, res) => {
+    try {
+        const content = await db.query('SELECT * FROM page_content');
+        const formatted = {};
+        content.forEach(c => {
+            formatted[c.content_key] = c.content_value;
+        });
+        res.json(formatted);
+    } catch (err) {
+        console.error('Error fetching page content:', err);
+        res.status(500).json({ error: 'Failed to retrieve page content.' });
+    }
+});
+
+// Admin: Get raw page content key-values
+app.get('/api/admin/content', requireAdmin, async (req, res) => {
+    try {
+        const content = await db.query('SELECT * FROM page_content');
+        const formatted = {};
+        content.forEach(c => {
+            formatted[c.content_key] = c.content_value;
+        });
+        res.json(formatted);
+    } catch (err) {
+        console.error('Error fetching admin page content:', err);
+        res.status(500).json({ error: 'Failed to retrieve page content.' });
+    }
+});
+
+// Admin: Bulk update page content
+app.post('/api/admin/content', requireAdmin, async (req, res) => {
+    try {
+        const updates = req.body;
+        for (const [key, value] of Object.entries(updates)) {
+            if (dbMode === 'memory') {
+                const existing = memDb.page_content.find(p => p.content_key === key);
+                if (existing) {
+                    existing.content_value = value;
+                    existing.updated_at = new Date();
+                } else {
+                    memDb.page_content.push({
+                        id: memDb.page_content.length + 1,
+                        content_key: key,
+                        content_value: value,
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    });
+                }
+            } else if (dbMode === 'sqlite') {
+                await dbConnection.run(
+                    'INSERT INTO page_content (content_key, content_value) VALUES (?, ?) ON CONFLICT(content_key) DO UPDATE SET content_value = ?, updated_at = CURRENT_TIMESTAMP',
+                    [key, value, value]
+                );
+            } else if (dbMode === 'mysql') {
+                await dbPool.query(
+                    'INSERT INTO page_content (content_key, content_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE content_value = ?',
+                    [key, value, value]
+                );
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating page content:', err);
+        res.status(500).json({ error: 'Failed to update page content.' });
     }
 });
 

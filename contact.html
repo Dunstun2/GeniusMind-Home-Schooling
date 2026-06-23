@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contact Genius Minds Homeschooling in Nairobi. Call, email, or fill out our booking form to book a free session. We offer online, home-based, and physical centre tutoring.">
+    <meta name="keywords" content="contact genius minds nairobi, book homeschooling session, igcse tutor contact kenya, homeschooling nairobi phone">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://geniusminds.website/contact.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://geniusminds.website/contact.html">
+    <meta property="og:title" content="Contact Us | Genius Minds Homeschooling">
+    <meta property="og:description" content="Get in touch with Genius Minds Homeschooling. Book a free session, ask a question, or visit us in Nairobi.">
+    <meta property="og:image" content="https://geniusminds.website/assets/images/logo-transparent.png">
+    <title>Contact Us | Genius Minds Homeschooling</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/images/logo-favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .inner-hero {
+            padding-top: 9rem;
+            padding-bottom: 5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(249,115,22,0.06) 100%);
+        }
+        .inner-hero::before {
+            content: '';
+            position: absolute; top: -150px; right: -150px;
+            width: 500px; height: 500px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            filter: blur(100px); opacity: 0.25; z-index: 0;
+        }
+        .inner-hero::after {
+            content: '';
+            position: absolute; bottom: -100px; left: -100px;
+            width: 400px; height: 400px;
+            background: var(--secondary-light);
+            border-radius: 50%;
+            filter: blur(90px); opacity: 0.2; z-index: 0;
+        }
+        .inner-hero .container { position: relative; z-index: 1; }
+        .inner-hero .breadcrumb {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .inner-hero .breadcrumb a { color: var(--primary); }
+        .inner-hero h1 { font-size: clamp(2.2rem, 6vw, 3.5rem); font-weight: 800; margin-bottom: 1.25rem; }
+        .inner-hero p { font-size: 1.125rem; color: var(--text-muted); max-width: 620px; margin: 0 auto; }
+
+        /* Contact Page Layout */
+        .contact-page-section { padding: 5rem 0; }
+
+        .contact-page-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        /* Left column — info */
+        .contact-info-col {}
+
+        .contact-info-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: var(--border-radius-lg);
+            color: white;
+            padding: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .contact-info-card h3 { color: white; font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .contact-info-card .sub { color: rgba(255,255,255,0.8); font-size: 0.95rem; margin-bottom: 2rem; }
+
+        .contact-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .contact-detail:last-child { margin-bottom: 0; }
+        .cd-icon {
+            width: 48px; height: 48px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 0.75rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .cd-info span {
+            display: block;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .cd-info strong {
+            font-size: 1.0625rem;
+            color: white;
+        }
+        .cd-info a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .cd-info a:hover { opacity: 0.85; }
+
+        /* Business Hours */
+        .hours-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+        }
+        .hours-card h4 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9375rem;
+        }
+        .hours-row:last-child { border-bottom: none; }
+        .hours-row .day { color: var(--text-muted); }
+        .hours-row .time { font-weight: 600; color: var(--text-main); }
+        .hours-row .closed { font-weight: 600; color: #ef4444; }
+        .hours-note {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            background: rgba(79,70,229,0.06);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Right column — form */
+        .contact-form-col {}
+
+        .booking-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 2.5rem;
+        }
+        .booking-card h3 {
+            font-size: 1.625rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .booking-card .form-sub {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Inline two-column form fields on wider screens */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Map section */
+        .map-section {
+            padding: 0 0 5rem;
+        }
+        .map-wrapper {
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+            height: 400px;
+        }
+        .map-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Social / quick contact strip */
+        .quick-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .quick-card {
+            text-align: center;
+            padding: 2rem 1.5rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .quick-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.06);
+        }
+        .quick-card .qc-icon { font-size: 2.25rem; margin-bottom: 0.75rem; }
+        .quick-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .quick-card p { font-size: 0.875rem; color: var(--text-muted); }
+
+        @media (max-width: 1024px) {
+            .contact-page-grid { grid-template-columns: 1fr; }
+            .quick-strip { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .form-row { grid-template-columns: 1fr; }
+            .quick-strip { grid-template-columns: 1fr; }
+            .booking-card { padding: 1.75rem; }
+            .contact-info-card { padding: 1.75rem; }
+            .map-wrapper { height: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div id="navbar-placeholder"></div>
+    </nav>
+
+    <!-- Inner Hero -->
+    <section class="inner-hero">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a>
+                <span>›</span>
+                <span>Contact Us</span>
+            </div>
+            <div class="badge">Get In Touch</div>
+            <h1>Contact <span>Us</span></h1>
+            <p>We'd love to hear from you. Book a session, ask a question, or simply say hello — we typically respond within 2 hours.</p>
+        </div>
+    </section>
+
+    <!-- Quick Contact Cards -->
+    <section style="padding: 3rem 0 0;">
+        <div class="container">
+            <div class="quick-strip">
+                <a href="tel:+254743322975" class="quick-card">
+                    <div class="qc-icon">📞</div>
+                    <h4>Call Us</h4>
+                    <p id="display-phone-q">+254 743-322-975</p>
+                </a>
+                <a href="mailto:geniusminds2425@gmail.com" class="quick-card">
+                    <div class="qc-icon">✉️</div>
+                    <h4>Email Us</h4>
+                    <p id="display-email-q">geniusminds2425@gmail.com</p>
+                </a>
+                <a href="https://wa.me/254743322975" target="_blank" rel="noopener noreferrer" class="quick-card">
+                    <div class="qc-icon">💬</div>
+                    <h4>WhatsApp</h4>
+                    <p>Chat with us directly on WhatsApp</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Contact Section -->
+    <section class="contact-page-section">
+        <div class="container">
+            <div class="contact-page-grid">
+
+                <!-- Left: Contact Info & Hours -->
+                <div class="contact-info-col">
+                    <div class="contact-info-card">
+                        <h3>Reach Out To Us</h3>
+                        <p class="sub">Our team is available Monday to Saturday. We'll get back to you promptly!</p>
+
+                        <div class="contact-detail">
+                            <div class="cd-icon">📞</div>
+                            <div class="cd-info">
+                                <span>Phone</span>
+                                <strong><a href="tel:+254743322975" id="display-phone">+254 743-322-975</a></strong>
+                            </div>
+                        </div>
+
+                        <div class="contact-detail">
+                            <div class="cd-icon">✉️</div>
+                            <div class="cd-info">
+                                <span>Email</span>
+                                <strong><a href="mailto:geniusminds2425@gmail.com" id="display-email">geniusminds2425@gmail.com</a></strong>
+                            </div>
+                        </div>
+
+                        <div class="contact-detail">
+                            <div class="cd-icon">📍</div>
+                            <div class="cd-info">
+                                <span>Location</span>
+                                <strong id="display-location">Nairobi, Kenya</strong>
+                            </div>
+                        </div>
+
+                        <div class="contact-detail">
+                            <div class="cd-icon">💬</div>
+                            <div class="cd-info">
+                                <span>WhatsApp</span>
+                                <strong><a href="https://wa.me/254743322975" target="_blank" rel="noopener">Chat on WhatsApp →</a></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business Hours -->
+                    <div class="hours-card">
+                        <h4>🕐 Business Hours</h4>
+                        <div class="hours-row">
+                            <span class="day">Monday – Friday</span>
+                            <span class="time">7:00 AM – 8:00 PM</span>
+                        </div>
+                        <div class="hours-row">
+                            <span class="day">Saturday</span>
+                            <span class="time">8:00 AM – 6:00 PM</span>
+                        </div>
+                        <div class="hours-row">
+                            <span class="day">Sunday</span>
+                            <span class="closed">Closed</span>
+                        </div>
+                        <p class="hours-note">⚡ Flexible scheduling available — weekend and evening sessions can be arranged on request.</p>
+                    </div>
+                </div>
+
+                <!-- Right: Booking Form -->
+                <div class="contact-form-col">
+                    <div class="booking-card">
+                        <h3>Book a Session</h3>
+                        <p class="form-sub">Fill in the form below and we'll get back to you within 2 hours to confirm your booking.</p>
+
+                        <form id="bookingForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="name">Parent's Full Name *</label>
+                                    <input type="text" id="name" name="name" required placeholder="e.g. Jane Kamau">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number *</label>
+                                    <input type="tel" id="phone" name="phone" required placeholder="e.g. +254 7xx xxx xxx">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email Address *</label>
+                                <input type="email" id="email" name="email" required placeholder="Enter your email address">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="service">Learning Format *</label>
+                                    <select id="service" name="service" required>
+                                        <option value="" disabled selected>Select a format</option>
+                                        <option value="online">Online Teaching</option>
+                                        <option value="home">Home-Based Tutoring</option>
+                                        <option value="physical">Physical Centre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="curriculum">Curriculum</label>
+                                    <select id="curriculum" name="curriculum">
+                                        <option value="" disabled selected>Select curriculum</option>
+                                        <option value="igcse">IGCSE / GCSE</option>
+                                        <option value="cbc">CBC / Competency-Based</option>
+                                        <option value="844">8-4-4 System</option>
+                                        <option value="us">US Curriculum</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="message">Tell Us About Your Child's Needs</label>
+                                <textarea id="message" name="message" rows="4" placeholder="e.g. Grade level, specific subjects, challenges, preferred schedule..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                                Submit Booking Request
+                            </button>
+                            <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">
+                                🔒 Your information is secure and will never be shared with third parties.
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Google Map Embed -->
+    <section class="map-section">
+        <div class="container">
+            <div class="section-header text-center" style="margin-bottom:2rem;">
+                <h2 class="section-title">Find Us on the <span>Map</span></h2>
+                <p class="section-desc">We serve students across Nairobi — Karen, Westlands, Kilimani, Lavington, Runda, Gigiri and beyond.</p>
+            </div>
+            <div class="map-wrapper">
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d255281.19036267546!2d36.6827985!3d-1.3031932!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f1172d84d49a7%3A0xf7cf0254b297924c!2sNairobi%2C%20Kenya!5e0!3m2!1sen!2ske!4v1695000000000!5m2!1sen!2ske"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title="Genius Minds Homeschooling — Nairobi, Kenya">
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div id="footer-placeholder"></div>
+    </footer>
+
+    <script src="analytics.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Pre-fill the message if coming from a course or blog link with query params
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const program = params.get('program');
+            const note = params.get('booking_note');
+            const msgEl = document.getElementById('message');
+
+            if (msgEl) {
+                if (program) msgEl.value = `I am interested in enrolling my child in the "${program}" programme.`;
+                else if (note) msgEl.value = note;
+            }
+        });
+    </script>
+</body>
+</html>

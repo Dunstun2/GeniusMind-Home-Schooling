@@ -20,6 +20,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let gaEvents = [];
     let activeGATab = 'devices'; // 'devices' or 'browsers'
 
+    // Mobile Sidebar Toggling
+    const mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebar = document.querySelector('.sidebar');
+
+    function toggleSidebar() {
+        if (sidebar) sidebar.classList.toggle('sidebar-open');
+        if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
+    }
+
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('sidebar-open');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    }
+
+    if (mobileSidebarBtn) mobileSidebarBtn.addEventListener('click', toggleSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // Collapsible Menu Toggle Logic
+    const systemConfigToggle = document.getElementById('systemConfigToggle');
+    const systemConfigMenu = document.getElementById('systemConfigMenu');
+    
+    if (systemConfigToggle && systemConfigMenu) {
+        systemConfigToggle.addEventListener('click', () => {
+            systemConfigToggle.classList.toggle('open');
+            systemConfigMenu.classList.toggle('open');
+        });
+    }
+
     // Tab Navigation Logic
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
@@ -48,6 +77,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadAdminUsers();
             } else if (tabId === 'banners') {
                 loadBanners();
+            } else if (tabId === 'settings') {
+                loadSiteSettings();
+            } else if (tabId === 'pages') {
+                loadPagesContent();
+            } else if (tabId === 'team') {
+                loadTeamMembers();
+            } else if (tabId === 'courses') {
+                loadCourses();
+            } else if (tabId === 'faqs') {
+                loadFaqs();
+            } else if (tabId === 'blog') {
+                loadBlogPosts();
+            }
+            
+            // Auto-close sidebar on mobile
+            if (window.innerWidth <= 992) {
+                closeSidebar();
             }
         });
     });
@@ -163,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeTab = document.querySelector('.nav-item.active').getAttribute('data-tab');
         if (activeTab === 'dashboard') {
             loadDashboardStats(true); // pass flag to skip connection alerts
+            loadWhatsAppStatus();
         }
     }, 20000);
 
@@ -182,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Fetch initial default tab data
                 loadDashboardStats();
+                loadWhatsAppStatus();
             }
         } catch (err) {
             console.error('Session check failure:', err);
@@ -218,6 +266,95 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching dashboard statistics:', err);
         }
     }
+
+    let waStatusPollTimeout = null;
+
+    async function loadWhatsAppStatus() {
+        if (waStatusPollTimeout) {
+            clearTimeout(waStatusPollTimeout);
+            waStatusPollTimeout = null;
+        }
+
+        try {
+            const response = await fetch('/api/admin/whatsapp/status');
+            if (response.ok) {
+                const data = await response.json();
+                const statusText = document.getElementById('waStatusText');
+                const qrContainer = document.getElementById('waQrContainer');
+                const qrImage = document.getElementById('waQrImage');
+                const disconnectBtn = document.getElementById('waDisconnectBtn');
+                
+                if (!statusText) return; // Not on dashboard
+                
+                let shouldPollFast = false;
+                
+                if (data.status === 'ready') {
+                    statusText.textContent = 'Connected ✅';
+                    statusText.style.color = '#25D366';
+                    qrContainer.style.display = 'none';
+                    if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+                } else if (data.status === 'authenticating') {
+                    if (data.qrCode) {
+                        statusText.textContent = 'Waiting for QR Scan...';
+                        statusText.style.color = '#ff9800';
+                        qrContainer.style.display = 'block';
+                        qrImage.src = data.qrCode;
+                    } else {
+                        statusText.textContent = 'Generating QR Code...';
+                        statusText.style.color = '#ff9800';
+                        qrContainer.style.display = 'none';
+                        shouldPollFast = true;
+                    }
+                    if (disconnectBtn) disconnectBtn.style.display = 'none';
+                } else if (data.status === 'disconnected') {
+                    statusText.textContent = 'Disconnected ⚠️';
+                    statusText.style.color = '#f44336';
+                    qrContainer.style.display = 'none';
+                    if (disconnectBtn) disconnectBtn.style.display = 'none';
+                    shouldPollFast = true;
+                } else {
+                    statusText.textContent = data.status || 'Unknown';
+                    statusText.style.color = '#666';
+                    if (disconnectBtn) disconnectBtn.style.display = 'none';
+                }
+
+                if (shouldPollFast) {
+                    waStatusPollTimeout = setTimeout(loadWhatsAppStatus, 2000);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching WhatsApp status:', err);
+        }
+    }
+
+    // Register WhatsApp disconnect listener
+    // Note: Since element is loaded with page, we can attach once, but it's better to delegate or do it inside the load function if it's dynamic.
+    // In our case, the button is in the HTML.
+    document.addEventListener('click', async (e) => {
+        if (e.target && e.target.id === 'waDisconnectBtn') {
+            const waDisconnectBtn = e.target;
+            if (!confirm('Are you sure you want to disconnect WhatsApp integration? You will need to scan the QR code again to reconnect.')) return;
+            
+            waDisconnectBtn.disabled = true;
+            waDisconnectBtn.textContent = 'Disconnecting...';
+            
+            try {
+                const response = await fetch('/api/admin/whatsapp/disconnect', { method: 'POST' });
+                if (response.ok) {
+                    alert('WhatsApp disconnected successfully.');
+                    loadWhatsAppStatus();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to disconnect WhatsApp.');
+                }
+            } catch (e) {
+                alert('Connection error while disconnecting WhatsApp.');
+            } finally {
+                waDisconnectBtn.disabled = false;
+                waDisconnectBtn.textContent = 'Disconnect WhatsApp';
+            }
+        }
+    });
 
     // Dynamic Database Engine Check
     function checkDatabaseConnection(dbMode) {
@@ -723,7 +860,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="cancelled" ${b.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
                 </td>
+                <td>
+                    <button class="btn-chat-booking" data-booking-id="${b.id}" data-booking-name="${escapeHTML(b.name)}">
+                        💬 Chat
+                    </button>
+                </td>
             `;
+
+            // Chat button click
+            const chatBtn = tr.querySelector('.btn-chat-booking');
+            chatBtn.addEventListener('click', () => {
+                openBookingChat(b.id, b.name, b.message);
+            });
 
             // Change status action listener
             const select = tr.querySelector('.select-status');
@@ -1289,5 +1437,910 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    }
+
+    // ==========================================
+    // BOOKING CHAT PANEL LOGIC
+    // ==========================================
+    
+    let activeChatBookingId = null;
+    let activeChatBookingNote = null;
+    let chatRefreshInterval = null;
+
+    const chatOverlay = document.getElementById('bookingChatOverlay');
+    const chatPanelMessages = document.getElementById('chatPanelMessages');
+    const chatPanelName = document.getElementById('chatPanelName');
+    const chatPanelSubtitle = document.getElementById('chatPanelSubtitle');
+    const chatPanelClose = document.getElementById('chatPanelClose');
+    const adminChatInput = document.getElementById('adminChatInput');
+    const adminChatSendBtn = document.getElementById('adminChatSendBtn');
+
+    // Admin File Attachment variables
+    let adminSelectedFile = null;
+    const adminChatAttachBtn = document.getElementById('adminChatAttachBtn');
+    const adminFileInput = document.getElementById('adminFileInput');
+    const adminFilePreviewChip = document.getElementById('adminFilePreviewChip');
+    const adminChipName = document.getElementById('adminChipName');
+    const adminChipRemove = document.getElementById('adminChipRemove');
+
+    // Reset attachments preview UI
+    function resetAdminAttachment() {
+        adminSelectedFile = null;
+        if (adminFileInput) adminFileInput.value = '';
+        if (adminFilePreviewChip) adminFilePreviewChip.style.display = 'none';
+    }
+
+    if (adminChatAttachBtn) {
+        adminChatAttachBtn.addEventListener('click', () => adminFileInput.click());
+    }
+    if (adminFileInput) {
+        adminFileInput.addEventListener('change', () => {
+            adminSelectedFile = adminFileInput.files[0] || null;
+            if (adminSelectedFile) {
+                adminChipName.textContent = adminSelectedFile.name;
+                adminFilePreviewChip.style.display = 'flex';
+            } else {
+                adminFilePreviewChip.style.display = 'none';
+            }
+        });
+    }
+    if (adminChipRemove) {
+        adminChipRemove.addEventListener('click', resetAdminAttachment);
+    }
+
+    function openBookingChat(bookingId, customerName, bookingNote) {
+        activeChatBookingId = bookingId;
+        activeChatBookingNote = bookingNote;
+        
+        chatPanelName.textContent = customerName;
+        chatPanelSubtitle.textContent = `Booking #${bookingId}`;
+        chatPanelMessages.innerHTML = '<div class="chat-empty-state"><span class="chat-empty-icon">⏳</span><span class="chat-empty-text">Loading messages...</span></div>';
+        adminChatInput.value = '';
+        
+        resetAdminAttachment();
+        
+        chatOverlay.classList.add('active');
+        
+        loadChatMessages();
+        
+        // Auto-refresh chat every 10 seconds
+        if (chatRefreshInterval) clearInterval(chatRefreshInterval);
+        chatRefreshInterval = setInterval(loadChatMessages, 10000);
+        
+        // Focus input
+        setTimeout(() => adminChatInput.focus(), 400);
+    }
+
+    function closeBookingChat() {
+        chatOverlay.classList.remove('active');
+        activeChatBookingId = null;
+        activeChatBookingNote = null;
+        resetAdminAttachment();
+        if (chatRefreshInterval) {
+            clearInterval(chatRefreshInterval);
+            chatRefreshInterval = null;
+        }
+    }
+
+    if (chatPanelClose) {
+        chatPanelClose.addEventListener('click', closeBookingChat);
+    }
+    if (chatOverlay) {
+        chatOverlay.addEventListener('click', (e) => {
+            if (e.target === chatOverlay) closeBookingChat();
+        });
+    }
+
+    async function loadChatMessages() {
+        if (!activeChatBookingId) return;
+        
+        try {
+            const response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`);
+            if (response.status === 401) return window.location.href = '/admin/login.html';
+            
+            const messages = await response.json();
+            renderChatMessages(messages);
+        } catch (err) {
+            console.error('Error loading chat messages:', err);
+        }
+    }
+
+    function renderChatMessages(messages) {
+        chatPanelMessages.innerHTML = '';
+        
+        // Show the original booking note first if it exists
+        if (activeChatBookingNote) {
+            chatPanelMessages.innerHTML += `
+                <div class="chat-note-bubble">
+                    📝 Original booking note: "${escapeHTML(activeChatBookingNote)}"
+                </div>
+            `;
+        }
+        
+        if (messages.length === 0 && !activeChatBookingNote) {
+            chatPanelMessages.innerHTML = `
+                <div class="chat-empty-state">
+                    <span class="chat-empty-icon">💬</span>
+                    <span class="chat-empty-text">No messages yet. Send the first message!</span>
+                </div>
+            `;
+            return;
+        }
+        
+        messages.forEach(msg => {
+            const isAdmin = msg.sender === 'admin';
+            const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+            
+            const isImage = msg.attachment_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.attachment_url);
+            const attachHtml = msg.attachment_url
+                ? `<div class="msg-attachment">${
+                    isImage
+                      ? `<img src="${msg.attachment_url}" alt="${escapeHTML(msg.attachment_name || 'image')}" onclick="window.open(this.src,'_blank')">`
+                      : `<a href="${msg.attachment_url}" download="${escapeHTML(msg.attachment_name || 'file')}">📄 ${escapeHTML(msg.attachment_name || 'Download file')}</a>`
+                  }</div>`
+                : '';
+            const textHtml = (msg.message && !msg.message.startsWith('[Attached:')) ? `<div>${escapeHTML(msg.message)}</div>` : '';
+
+            chatPanelMessages.innerHTML += `
+                <div class="chat-bubble ${isAdmin ? 'admin-msg' : 'customer-msg'}">
+                    <span class="chat-sender">${isAdmin ? 'You (Admin)' : '👤 Customer'}</span>
+                    ${textHtml}
+                    ${attachHtml}
+                    <span class="chat-time">${time}</span>
+                </div>
+            `;
+        });
+        
+        // Auto-scroll to bottom
+        chatPanelMessages.scrollTop = chatPanelMessages.scrollHeight;
+    }
+
+    async function sendAdminMessage() {
+        const message = adminChatInput.value.trim();
+        if (!message && !adminSelectedFile) return;
+        if (!activeChatBookingId) return;
+        
+        adminChatSendBtn.disabled = true;
+        adminChatSendBtn.textContent = '...';
+        
+        try {
+            let response;
+            if (adminSelectedFile) {
+                const fd = new FormData();
+                if (message) fd.append('message', message);
+                fd.append('attachment', adminSelectedFile);
+                response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`, {
+                    method: 'POST',
+                    body: fd
+                });
+            } else {
+                response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+            }
+            
+            if (response.ok) {
+                adminChatInput.value = '';
+                resetAdminAttachment();
+                await loadChatMessages(); // Reload messages
+                adminChatInput.focus();
+            } else {
+                const err = await response.json();
+                alert(err.error || 'Failed to send message.');
+            }
+        } catch (e) {
+            alert('Connection error while sending message.');
+        } finally {
+            adminChatSendBtn.disabled = false;
+            adminChatSendBtn.textContent = 'Send';
+        }
+    }
+
+    if (adminChatSendBtn) {
+        adminChatSendBtn.addEventListener('click', sendAdminMessage);
+    }
+    if (adminChatInput) {
+        adminChatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendAdminMessage();
+        });
+    }
+
+    // ==========================================
+    // SITE SETTINGS MANAGEMENT
+    // ==========================================
+
+    async function loadSiteSettings() {
+        try {
+            const response = await fetch('/api/admin/settings');
+            if (response.status === 401) return window.location.href = '/admin/login.html';
+            const settings = await response.json();
+
+            const phoneInput = document.getElementById('setting_contact_phone');
+            const emailInput = document.getElementById('setting_contact_email');
+            const locationInput = document.getElementById('setting_contact_location');
+
+            if (phoneInput) phoneInput.value = settings.contact_phone || '';
+            if (emailInput) emailInput.value = settings.contact_email || '';
+            if (locationInput) locationInput.value = settings.contact_location || '';
+        } catch (err) {
+            console.error('Error loading site settings:', err);
+        }
+    }
+
+    const siteSettingsForm = document.getElementById('siteSettingsForm');
+    if (siteSettingsForm) {
+        siteSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveSettingsBtn');
+            const statusSpan = document.getElementById('settingsSaveStatus');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            statusSpan.style.display = 'none';
+
+            const payload = {
+                contact_phone: document.getElementById('setting_contact_phone').value.trim(),
+                contact_email: document.getElementById('setting_contact_email').value.trim(),
+                contact_location: document.getElementById('setting_contact_location').value.trim()
+            };
+
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    statusSpan.textContent = '✅ Saved successfully!';
+                    statusSpan.style.color = '#10b981';
+                    statusSpan.style.display = 'inline';
+                    setTimeout(() => { statusSpan.style.display = 'none'; }, 3000);
+                } else {
+                    const err = await response.json();
+                    statusSpan.textContent = '❌ ' + (err.error || 'Save failed.');
+                    statusSpan.style.color = '#ef4444';
+                    statusSpan.style.display = 'inline';
+                }
+            } catch (err) {
+                statusSpan.textContent = '❌ Connection error.';
+                statusSpan.style.color = '#ef4444';
+                statusSpan.style.display = 'inline';
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Settings';
+            }
+        });
+    }
+
+    // ==========================================
+    // CUSTOM CMS: PAGES & CONTENT
+    // ==========================================
+    const pagesContentForm = document.getElementById('pagesContentForm');
+    async function loadPagesContent() {
+        try {
+            const response = await fetch('/api/admin/content');
+            if (response.status === 401) return window.location.href = '/admin/login.html';
+            const content = await response.json();
+            
+            document.getElementById('content_mission_statement').value = content.mission_statement || '';
+            document.getElementById('content_vision').value = content.vision || '';
+            document.getElementById('content_history').value = content.history || '';
+            document.getElementById('content_teaching_philosophy').value = content.teaching_philosophy || '';
+        } catch (err) {
+            console.error('Error fetching page content:', err);
+        }
+    }
+
+    if (pagesContentForm) {
+        pagesContentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('savePagesBtn');
+            const statusSpan = document.getElementById('pagesSaveStatus');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            statusSpan.style.display = 'none';
+
+            const payload = {
+                mission_statement: document.getElementById('content_mission_statement').value.trim(),
+                vision: document.getElementById('content_vision').value.trim(),
+                history: document.getElementById('content_history').value.trim(),
+                teaching_philosophy: document.getElementById('content_teaching_philosophy').value.trim()
+            };
+
+            try {
+                const response = await fetch('/api/admin/content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    statusSpan.textContent = '✅ Content saved successfully!';
+                    statusSpan.style.color = '#10b981';
+                    statusSpan.style.display = 'inline';
+                    setTimeout(() => { statusSpan.style.display = 'none'; }, 3000);
+                } else {
+                    const err = await response.json();
+                    statusSpan.textContent = '❌ ' + (err.error || 'Save failed.');
+                    statusSpan.style.color = '#ef4444';
+                    statusSpan.style.display = 'inline';
+                }
+            } catch (err) {
+                statusSpan.textContent = '❌ Connection error.';
+                statusSpan.style.color = '#ef4444';
+                statusSpan.style.display = 'inline';
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Content';
+            }
+        });
+    }
+
+    // ==========================================
+    // CUSTOM CMS: TEAM MEMBERS
+    // ==========================================
+    const teamModal = document.getElementById('teamModal');
+    const teamForm = document.getElementById('teamForm');
+    const teamModalTitle = document.getElementById('teamModalTitle');
+    const addTeamBtn = document.getElementById('addTeamBtn');
+    const teamModalCloseBtn = document.getElementById('teamModalCloseBtn');
+    const teamCancelBtn = document.getElementById('teamCancelBtn');
+    const teamImagePreviewContainer = document.getElementById('teamImagePreviewContainer');
+    const teamImagePreview = document.getElementById('teamImagePreview');
+    const teamImageInput = document.getElementById('team_image');
+    let allTeam = [];
+
+    if (addTeamBtn) addTeamBtn.addEventListener('click', () => openTeamModal());
+    if (teamModalCloseBtn) teamModalCloseBtn.addEventListener('click', () => closeTeamModal());
+    if (teamCancelBtn) teamCancelBtn.addEventListener('click', () => closeTeamModal());
+
+    // Modal backdrop click
+    window.addEventListener('click', (e) => {
+        if (e.target === teamModal) closeTeamModal();
+        if (e.target === courseModal) closeCourseModal();
+        if (e.target === faqModal) closeFaqModal();
+        if (e.target === blogModal) closeBlogModal();
+    });
+
+    function openTeamModal(member = null) {
+        teamForm.reset();
+        if (member) {
+            teamModalTitle.textContent = 'Edit Team Member';
+            document.getElementById('teamId').value = member.id;
+            document.getElementById('team_name').value = member.name || '';
+            document.getElementById('team_role').value = member.role || '';
+            document.getElementById('team_bio').value = member.bio || '';
+            document.getElementById('team_display_order').value = member.display_order || 0;
+            if (member.image_url) {
+                teamImagePreview.src = member.image_url;
+                teamImagePreviewContainer.style.display = 'block';
+            } else {
+                teamImagePreviewContainer.style.display = 'none';
+            }
+        } else {
+            teamModalTitle.textContent = 'Add Team Member';
+            document.getElementById('teamId').value = '';
+            teamImagePreviewContainer.style.display = 'none';
+        }
+        teamModal.classList.add('active');
+    }
+
+    function closeTeamModal() {
+        teamModal.classList.remove('active');
+        teamForm.reset();
+    }
+
+    if (teamForm) {
+        teamForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('teamId').value;
+            const submitBtn = document.getElementById('teamSubmitBtn');
+            const isEdit = !!id;
+            const url = isEdit ? `/api/admin/team/${id}` : '/api/admin/team';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const formData = new FormData(teamForm);
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(isEdit ? 'Team member updated!' : 'Team member added!');
+                    closeTeamModal();
+                    loadTeamMembers();
+                } else {
+                    throw new Error(result.error || 'Failed to save team member.');
+                }
+            } catch (err) {
+                alert('Error saving team member: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Team Member';
+            }
+        });
+    }
+
+    async function loadTeamMembers() {
+        const grid = document.getElementById('teamGrid');
+        if (!grid) return;
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading team members...</div>';
+        try {
+            const response = await fetch('/api/admin/team');
+            allTeam = await response.json();
+            grid.innerHTML = '';
+            if (allTeam.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No team members added yet.</div>';
+                return;
+            }
+            allTeam.forEach(member => {
+                const card = document.createElement('div');
+                card.className = 'banner-card';
+                const img = member.image_url || '/assets/images/placeholder-avatar.png';
+                card.innerHTML = `
+                    <div class="banner-card-img-wrapper" style="height: 160px;">
+                        <img src="${img}" alt="${escapeHTML(member.name)}" class="banner-card-img" style="object-fit: cover;">
+                        <span class="status-badge live banner-card-badge" style="background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.4); color: #60a5fa;">Order: ${member.display_order}</span>
+                    </div>
+                    <div class="banner-card-body">
+                        <h4 class="banner-card-title" style="margin-bottom: 4px;">${escapeHTML(member.name)}</h4>
+                        <strong style="color: #60a5fa; font-size: 13px; display: block; margin-bottom: 12px;">${escapeHTML(member.role)}</strong>
+                        <p class="banner-card-subtitle" style="height: 60px; overflow-y: auto;">${escapeHTML(member.bio || '')}</p>
+                        <div class="banner-card-actions" style="margin-top: 15px;">
+                            <button class="btn btn-view-log edit-team-btn" data-id="${member.id}">✏️ Edit</button>
+                            <button class="btn btn-danger delete-team-btn" data-id="${member.id}">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Bind actions
+            grid.querySelectorAll('.edit-team-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const member = allTeam.find(t => t.id == btn.getAttribute('data-id'));
+                    if (member) openTeamModal(member);
+                });
+            });
+            grid.querySelectorAll('.delete-team-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+                    if (confirm('Delete this team member?')) {
+                        try {
+                            const res = await fetch(`/api/admin/team/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                alert('Deleted!');
+                                loadTeamMembers();
+                            }
+                        } catch (err) {
+                            alert('Failed to delete: ' + err.message);
+                        }
+                    }
+                });
+            });
+        } catch (err) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;">Failed to load team.</div>';
+        }
+    }
+
+    // ==========================================
+    // CUSTOM CMS: COURSES
+    // ==========================================
+    const courseModal = document.getElementById('courseModal');
+    const courseForm = document.getElementById('courseForm');
+    const courseModalTitle = document.getElementById('courseModalTitle');
+    const addCourseBtn = document.getElementById('addCourseBtn');
+    const courseModalCloseBtn = document.getElementById('courseModalCloseBtn');
+    const courseCancelBtn = document.getElementById('courseCancelBtn');
+    let allCourses = [];
+
+    if (addCourseBtn) addCourseBtn.addEventListener('click', () => openCourseModal());
+    if (courseModalCloseBtn) courseModalCloseBtn.addEventListener('click', () => closeCourseModal());
+    if (courseCancelBtn) courseCancelBtn.addEventListener('click', () => closeCourseModal());
+
+    function openCourseModal(course = null) {
+        courseForm.reset();
+        if (course) {
+            courseModalTitle.textContent = 'Edit Course';
+            document.getElementById('courseId').value = course.id;
+            document.getElementById('course_title').value = course.title || '';
+            document.getElementById('course_grade_levels').value = course.grade_levels || '';
+            document.getElementById('course_duration').value = course.duration || '';
+            document.getElementById('course_fees').value = course.fees || '';
+            document.getElementById('course_subjects').value = course.subjects || '';
+            document.getElementById('course_description').value = course.description || '';
+            document.getElementById('course_outcomes').value = course.outcomes || '';
+        } else {
+            courseModalTitle.textContent = 'Add Course';
+            document.getElementById('courseId').value = '';
+        }
+        courseModal.classList.add('active');
+    }
+
+    function closeCourseModal() {
+        courseModal.classList.remove('active');
+        courseForm.reset();
+    }
+
+    if (courseForm) {
+        courseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('courseId').value;
+            const submitBtn = document.getElementById('courseSubmitBtn');
+            const isEdit = !!id;
+            const url = isEdit ? `/api/admin/courses/${id}` : '/api/admin/courses';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            const payload = {
+                title: document.getElementById('course_title').value.trim(),
+                grade_levels: document.getElementById('course_grade_levels').value.trim(),
+                duration: document.getElementById('course_duration').value.trim(),
+                fees: document.getElementById('course_fees').value.trim(),
+                subjects: document.getElementById('course_subjects').value.trim(),
+                description: document.getElementById('course_description').value.trim(),
+                outcomes: document.getElementById('course_outcomes').value.trim()
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(isEdit ? 'Course updated!' : 'Course added!');
+                    closeCourseModal();
+                    loadCourses();
+                } else {
+                    throw new Error(result.error || 'Failed to save course.');
+                }
+            } catch (err) {
+                alert('Error saving course: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Course';
+            }
+        });
+    }
+
+    async function loadCourses() {
+        const tbody = document.getElementById('coursesTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading courses...</td></tr>';
+        try {
+            const response = await fetch('/api/admin/courses');
+            allCourses = await response.json();
+            tbody.innerHTML = '';
+            if (allCourses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">No courses found.</td></tr>';
+                return;
+            }
+            allCourses.forEach(course => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHTML(course.title)}</strong></td>
+                    <td>${escapeHTML(course.grade_levels || '')}</td>
+                    <td>${escapeHTML(course.duration || '')}</td>
+                    <td>${escapeHTML(course.fees || '')}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-view-log edit-course-btn" data-id="${course.id}" style="padding: 4px 8px; font-size: 12px;">✏️ Edit</button>
+                            <button class="btn btn-danger delete-course-btn" data-id="${course.id}" style="padding: 4px 8px; font-size: 12px;">🗑️ Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            tbody.querySelectorAll('.edit-course-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const course = allCourses.find(c => c.id == btn.getAttribute('data-id'));
+                    if (course) openCourseModal(course);
+                });
+            });
+            tbody.querySelectorAll('.delete-course-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+                    if (confirm('Delete this course?')) {
+                        try {
+                            const res = await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                alert('Deleted!');
+                                loadCourses();
+                            }
+                        } catch (err) {
+                            alert('Error: ' + err.message);
+                        }
+                    }
+                });
+            });
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #ef4444;">Failed to load courses.</td></tr>';
+        }
+    }
+
+    // ==========================================
+    // CUSTOM CMS: FAQS
+    // ==========================================
+    const faqModal = document.getElementById('faqModal');
+    const faqForm = document.getElementById('faqForm');
+    const faqModalTitle = document.getElementById('faqModalTitle');
+    const addFaqBtn = document.getElementById('addFaqBtn');
+    const faqModalCloseBtn = document.getElementById('faqModalCloseBtn');
+    const faqCancelBtn = document.getElementById('faqCancelBtn');
+    let allFaqs = [];
+
+    if (addFaqBtn) addFaqBtn.addEventListener('click', () => openFaqModal());
+    if (faqModalCloseBtn) faqModalCloseBtn.addEventListener('click', () => closeFaqModal());
+    if (faqCancelBtn) faqCancelBtn.addEventListener('click', () => closeFaqModal());
+
+    function openFaqModal(faq = null) {
+        faqForm.reset();
+        if (faq) {
+            faqModalTitle.textContent = 'Edit FAQ';
+            document.getElementById('faqId').value = faq.id;
+            document.getElementById('faq_question').value = faq.question || '';
+            document.getElementById('faq_answer').value = faq.answer || '';
+            document.getElementById('faq_category').value = faq.category || 'General';
+            document.getElementById('faq_display_order').value = faq.display_order || 0;
+        } else {
+            faqModalTitle.textContent = 'Add FAQ';
+            document.getElementById('faqId').value = '';
+        }
+        faqModal.classList.add('active');
+    }
+
+    function closeFaqModal() {
+        faqModal.classList.remove('active');
+        faqForm.reset();
+    }
+
+    if (faqForm) {
+        faqForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('faqId').value;
+            const submitBtn = document.getElementById('faqSubmitBtn');
+            const isEdit = !!id;
+            const url = isEdit ? `/api/admin/faqs/${id}` : '/api/admin/faqs';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            const payload = {
+                question: document.getElementById('faq_question').value.trim(),
+                answer: document.getElementById('faq_answer').value.trim(),
+                category: document.getElementById('faq_category').value,
+                display_order: parseInt(document.getElementById('faq_display_order').value) || 0
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(isEdit ? 'FAQ updated!' : 'FAQ added!');
+                    closeFaqModal();
+                    loadFAQs();
+                } else {
+                    throw new Error(result.error || 'Failed to save FAQ.');
+                }
+            } catch (err) {
+                alert('Error saving FAQ: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save FAQ';
+            }
+        });
+    }
+
+    async function loadFAQs() {
+        const tbody = document.getElementById('faqsTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Loading FAQs...</td></tr>';
+        try {
+            const response = await fetch('/api/admin/faqs');
+            allFaqs = await response.json();
+            tbody.innerHTML = '';
+            if (allFaqs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">No FAQs found.</td></tr>';
+                return;
+            }
+            allFaqs.forEach(faq => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHTML(faq.question)}</strong></td>
+                    <td><span class="status-badge live" style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); color: #c084fc;">${escapeHTML(faq.category)}</span></td>
+                    <td>${faq.display_order}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-view-log edit-faq-btn" data-id="${faq.id}" style="padding: 4px 8px; font-size: 12px;">✏️ Edit</button>
+                            <button class="btn btn-danger delete-faq-btn" data-id="${faq.id}" style="padding: 4px 8px; font-size: 12px;">🗑️ Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            tbody.querySelectorAll('.edit-faq-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const faq = allFaqs.find(f => f.id == btn.getAttribute('data-id'));
+                    if (faq) openFaqModal(faq);
+                });
+            });
+            tbody.querySelectorAll('.delete-faq-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+                    if (confirm('Delete this FAQ?')) {
+                        try {
+                            const res = await fetch(`/api/admin/faqs/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                alert('Deleted!');
+                                loadFAQs();
+                            }
+                        } catch (err) {
+                            alert('Error: ' + err.message);
+                        }
+                    }
+                });
+            });
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #ef4444;">Failed to load FAQs.</td></tr>';
+        }
+    }
+
+    // ==========================================
+    // CUSTOM CMS: BLOG POSTS
+    // ==========================================
+    const blogModal = document.getElementById('blogModal');
+    const blogForm = document.getElementById('blogForm');
+    const blogModalTitle = document.getElementById('blogModalTitle');
+    const addBlogBtn = document.getElementById('addBlogBtn');
+    const blogModalCloseBtn = document.getElementById('blogModalCloseBtn');
+    const blogCancelBtn = document.getElementById('blogCancelBtn');
+    const blogImagePreviewContainer = document.getElementById('blogImagePreviewContainer');
+    const blogImagePreview = document.getElementById('blogImagePreview');
+    let allBlogs = [];
+
+    if (addBlogBtn) addBlogBtn.addEventListener('click', () => openBlogModal());
+    if (blogModalCloseBtn) blogModalCloseBtn.addEventListener('click', () => closeBlogModal());
+    if (blogCancelBtn) blogCancelBtn.addEventListener('click', () => closeBlogModal());
+
+    function openBlogModal(post = null) {
+        blogForm.reset();
+        if (post) {
+            blogModalTitle.textContent = 'Edit Blog Post';
+            document.getElementById('blogId').value = post.id;
+            document.getElementById('blog_title').value = post.title || '';
+            document.getElementById('blog_category').value = post.category || '';
+            document.getElementById('blog_author').value = post.author || 'Admin Team';
+            document.getElementById('blog_excerpt').value = post.excerpt || '';
+            document.getElementById('blog_content').value = post.content || '';
+            if (post.image_url) {
+                blogImagePreview.src = post.image_url;
+                blogImagePreviewContainer.style.display = 'block';
+            } else {
+                blogImagePreviewContainer.style.display = 'none';
+            }
+        } else {
+            blogModalTitle.textContent = 'Publish New Post';
+            document.getElementById('blogId').value = '';
+            document.getElementById('blog_author').value = 'Admin Team';
+            blogImagePreviewContainer.style.display = 'none';
+        }
+        blogModal.classList.add('active');
+    }
+
+    function closeBlogModal() {
+        blogModal.classList.remove('active');
+        blogForm.reset();
+    }
+
+    if (blogForm) {
+        blogForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('blogId').value;
+            const submitBtn = document.getElementById('blogSubmitBtn');
+            const isEdit = !!id;
+            const url = isEdit ? `/api/admin/blog/${id}` : '/api/admin/blog';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Publishing...';
+
+            try {
+                const formData = new FormData(blogForm);
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(isEdit ? 'Article updated!' : 'New article published!');
+                    closeBlogModal();
+                    loadBlogPosts();
+                } else {
+                    throw new Error(result.error || 'Failed to save blog post.');
+                }
+            } catch (err) {
+                alert('Error saving blog post: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Publish Post';
+            }
+        });
+    }
+
+    async function loadBlogPosts() {
+        const grid = document.getElementById('blogGrid');
+        if (!grid) return;
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading blog posts...</div>';
+        try {
+            const response = await fetch('/api/admin/blog');
+            allBlogs = await response.json();
+            grid.innerHTML = '';
+            if (allBlogs.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No blog posts published yet.</div>';
+                return;
+            }
+            allBlogs.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'banner-card';
+                const img = post.image_url || '/assets/images/blog-placeholder.png';
+                const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : '';
+                card.innerHTML = `
+                    <div class="banner-card-img-wrapper" style="height: 160px;">
+                        <img src="${img}" alt="${escapeHTML(post.title)}" class="banner-card-img" style="object-fit: cover;">
+                        <span class="status-badge live banner-card-badge" style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); color: #34d399;">${escapeHTML(post.category || 'General')}</span>
+                    </div>
+                    <div class="banner-card-body">
+                        <h4 class="banner-card-title" style="margin-bottom: 4px;">${escapeHTML(post.title)}</h4>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">By ${escapeHTML(post.author)} • ${dateStr}</div>
+                        <p class="banner-card-subtitle" style="height: 60px; overflow-y: auto;">${escapeHTML(post.excerpt || '')}</p>
+                        <div class="banner-card-actions" style="margin-top: 15px;">
+                            <button class="btn btn-view-log edit-blog-btn" data-id="${post.id}">✏️ Edit</button>
+                            <button class="btn btn-danger delete-blog-btn" data-id="${post.id}">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            grid.querySelectorAll('.edit-blog-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const post = allBlogs.find(b => b.id == btn.getAttribute('data-id'));
+                    if (post) openBlogModal(post);
+                });
+            });
+            grid.querySelectorAll('.delete-blog-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+                    if (confirm('Delete this blog post?')) {
+                        try {
+                            const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                alert('Deleted!');
+                                loadBlogPosts();
+                            }
+                        } catch (err) {
+                            alert('Error: ' + err.message);
+                        }
+                    }
+                });
+            });
+        } catch (err) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;">Failed to load blog posts.</div>';
+        }
     }
 });

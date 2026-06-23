@@ -42,6 +42,7 @@
 
 html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
 }
 
 body {
@@ -51,6 +52,7 @@ body {
     line-height: 1.6;
     transition: background-color 0.3s ease, color 0.3s ease;
     overflow-x: hidden;
+    width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -376,7 +378,7 @@ section {
 }
 
 .hero-title {
-    font-size: 3.5rem;
+    font-size: clamp(2.5rem, 8vw, 4rem);
     font-weight: 800;
     margin-bottom: 1.5rem;
 }
@@ -764,6 +766,7 @@ section {
     background: var(--bg-color);
     color: var(--text-main);
     font-family: var(--font-body);
+    font-size: 16px; /* Prevents auto-zoom on iOS Safari */
     transition: var(--transition);
 }
 
@@ -886,12 +889,20 @@ section {
     }
     
     .hero-title {
-        font-size: 2.5rem;
+        font-size: clamp(2rem, 10vw, 2.5rem);
     }
     
     .contact-info,
     .contact-form-wrapper {
-        padding: 2rem;
+        padding: 2rem 1.5rem;
+    }
+    
+    .section {
+        padding: 3.5rem 0;
+    }
+    
+    .container {
+        padding: 0 1.25rem;
     }
 }
 
@@ -1546,4 +1557,43 @@ section {
 }
 
 
+/* =====================================================================
+   Shared Inner-Page (Subpage) Styles
+   ===================================================================== */
 
+/* Active nav link highlight */
+.nav-links a.active-page {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Primary color variable aliases used in inline JS-generated cards */
+:root {
+    --primary-color: var(--primary);
+    --secondary-color: var(--secondary);
+}
+
+/* Shared CTA strip pattern reused across subpages */
+.cta-strip {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    text-align: center;
+    padding: 5rem 0;
+}
+.cta-strip h2 {
+    color: white;
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+}
+.cta-strip p {
+    color: rgba(255,255,255,0.82);
+    max-width: 580px;
+    margin: 0 auto 2.5rem;
+    font-size: 1.0625rem;
+}
+
+/* ── Responsive tweaks for subpage sections ── */
+@media (max-width: 768px) {
+    .cta-strip { padding: 3.5rem 0; }
+    .cta-strip h2 { font-size: 1.75rem; }
+}

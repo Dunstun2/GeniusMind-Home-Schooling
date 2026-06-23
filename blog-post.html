@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Read the latest articles, tips and insights from Genius Minds Homeschooling.">
+    <meta name="robots" content="index, follow">
+    <title>Article | Genius Minds Blog</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/images/logo-favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .inner-hero {
+            padding-top: 9rem;
+            padding-bottom: 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(249,115,22,0.06) 100%);
+        }
+        .inner-hero::before {
+            content: '';
+            position: absolute; top: -150px; right: -150px;
+            width: 500px; height: 500px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            filter: blur(100px); opacity: 0.25; z-index: 0;
+        }
+        .inner-hero .container { position: relative; z-index: 1; }
+        .inner-hero .breadcrumb {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .inner-hero .breadcrumb a { color: var(--primary); }
+
+        .post-section { padding: 4rem 0 6rem; }
+        #blog-post-container { max-width: 900px; margin: 0 auto; }
+
+        /* CTA strip */
+        .cta-strip {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            text-align: center;
+            padding: 5rem 0;
+        }
+        .cta-strip h2 { color: white; font-size: 2.25rem; margin-bottom: 1rem; }
+        .cta-strip p { color: rgba(255,255,255,0.8); max-width: 560px; margin: 0 auto 2.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div id="navbar-placeholder"></div>
+    </nav>
+
+    <!-- Mini breadcrumb hero -->
+    <section class="inner-hero">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a>
+                <span>›</span>
+                <a href="blog.html">Blog & News</a>
+                <span>›</span>
+                <span>Article</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Blog Post Content -->
+    <section class="post-section">
+        <div class="container">
+            <div id="blog-post-container">
+                <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                    Loading article...
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-strip">
+        <div class="container">
+            <h2>Ready to Start Your Child's <span style="color:var(--secondary-light);">Journey?</span></h2>
+            <p>Book a free initial consultation and let us create the perfect learning plan together.</p>
+            <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                <a href="contact.html" class="btn btn-outline" style="border-color:white; color:white;">Book Free Session</a>
+                <a href="blog.html" class="btn" style="background:white; color:var(--primary); font-weight:700;">← More Articles</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div id="footer-placeholder"></div>
+    </footer>
+
+    <script src="analytics.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -54,33 +54,8 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="#" class="logo">
-                <img src="assets/images/logo-transparent.png" alt="Genius Minds Homeschooling" class="logo-img-full">
-            </a>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About Us</a></li>
-                <li><a href="#services">Services</a></li>
-                <li><a href="#curriculum">Curriculum</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-            <div class="nav-actions">
-                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">
-                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-                <a href="#contact" class="btn btn-primary">Book Now</a>
-                <div class="mobile-menu-btn">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
 
     <!-- Achievements & Announcements Highlights Slider -->
     <section class="highlights-slider">
@@ -663,25 +638,25 @@
                     <p class="mb-4">Your success story is just a click away. Reach out to us today to book a session or ask any questions.</p>
                     
                     <div class="contact-methods">
-                        <a href="tel:+254743322975" class="contact-method">
+                        <a href="tel:+254743322975" class="contact-method" id="contact-phone-link">
                             <div class="method-icon">📞</div>
                             <div class="method-details">
                                 <span>Call Us</span>
-                                <strong>+254 743-322-975</strong>
+                                <strong id="display-phone">+254 743-322-975</strong>
                             </div>
                         </a>
-                        <a href="mailto:geniusminds2425@gmail.com" class="contact-method">
+                        <a href="mailto:geniusminds2425@gmail.com" class="contact-method" id="contact-email-link">
                             <div class="method-icon">✉️</div>
                             <div class="method-details">
                                 <span>Email Us</span>
-                                <strong>geniusminds2425@gmail.com</strong>
+                                <strong id="display-email">geniusminds2425@gmail.com</strong>
                             </div>
                         </a>
                         <div class="contact-method">
                             <div class="method-icon">📍</div>
                             <div class="method-details">
                                 <span>Location</span>
-                                <strong>Nairobi, Kenya</strong>
+                                <strong id="display-location">Nairobi, Kenya</strong>
                             </div>
                         </div>
                     </div>
@@ -722,37 +697,8 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <div class="logo">
-                        <img src="assets/images/logo-transparent.png" alt="Genius Minds Homeschooling" class="logo-img-full footer-logo">
-                    </div>
-                    <p>Providing high-quality, affordable, and flexible education tailored to every student's needs.</p>
-                </div>
-                <div class="footer-links">
-                    <h4>Useful Links</h4>
-                    <ul>
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#services">Services</a></li>
-                        <li><a href="#curriculum">Curriculum</a></li>
-                    </ul>
-                </div>
-                <div class="footer-links">
-                    <h4>Legal</h4>
-                    <ul>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; <span id="year"></span> Genius Minds Homeschooling. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
 
     <script src="analytics.js"></script>
     <script src="script.js"></script>

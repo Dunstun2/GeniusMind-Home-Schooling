@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <!-- App Container -->
     <div class="app-layout">
         <!-- Sidebar Navigation -->
@@ -40,6 +41,32 @@
                 <a href="#banners" class="nav-item" data-tab="banners">
                     <span class="nav-icon">🖼️</span> Banners
                 </a>
+                <div class="nav-group">
+                    <button class="nav-group-toggle" id="systemConfigToggle">
+                        <span class="nav-icon">🛠️</span> System Config
+                        <span class="chevron">▼</span>
+                    </button>
+                    <div class="nav-group-items open" id="systemConfigMenu">
+                        <a href="#pages" class="nav-item" data-tab="pages">
+                            <span class="nav-icon">📝</span> Pages & Content
+                        </a>
+                        <a href="#team" class="nav-item" data-tab="team">
+                            <span class="nav-icon">👨‍🏫</span> Team Members
+                        </a>
+                        <a href="#courses" class="nav-item" data-tab="courses">
+                            <span class="nav-icon">📚</span> Courses / Programs
+                        </a>
+                        <a href="#faqs" class="nav-item" data-tab="faqs">
+                            <span class="nav-icon">❓</span> FAQs
+                        </a>
+                        <a href="#blog" class="nav-item" data-tab="blog">
+                            <span class="nav-icon">📰</span> Blog & News
+                        </a>
+                        <a href="#settings" class="nav-item" data-tab="settings">
+                            <span class="nav-icon">⚙️</span> Site Settings
+                        </a>
+                    </div>
+                </div>
             </nav>
             
             <div class="sidebar-footer">
@@ -57,7 +84,16 @@
         <main class="main-content">
             <!-- Header bar -->
             <header class="top-bar">
-                <h1 class="page-title" id="pageTitle">System Overview</h1>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="mobileSidebarBtn" class="mobile-sidebar-btn" aria-label="Toggle Menu">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="page-title" id="pageTitle">System Overview</h1>
+                </div>
                 <div class="user-controls">
                     <div class="user-info">
                         <span class="user-avatar" id="userAvatar">A</span>
@@ -161,6 +197,27 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- WhatsApp Integration Card -->
+                    <div class="whatsapp-card-container" style="margin-top: 2rem;">
+                        <div class="chart-card">
+                            <h3>WhatsApp Integration</h3>
+                            <div class="whatsapp-status-wrapper" style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem;">
+                                <div class="whatsapp-icon" style="font-size: 3rem; color: #25D366;">
+                                    💬
+                                </div>
+                                <div class="whatsapp-info" style="flex: 1;">
+                                    <h4 style="margin: 0 0 0.5rem 0;">Connection Status: <span id="waStatusText" style="color: #666;">Checking...</span></h4>
+                                    <p style="margin: 0 0 0.8rem 0; color: #666; font-size: 0.9rem;">This service handles sending WhatsApp notifications to the admin and customers.</p>
+                                    <button id="waDisconnectBtn" class="btn-whatsapp-disconnect" style="display: none;">Disconnect WhatsApp</button>
+                                </div>
+                                <div id="waQrContainer" style="display: none; text-align: center;">
+                                    <img id="waQrImage" src="" alt="WhatsApp QR Code" style="max-width: 150px; border: 1px solid #ddd; border-radius: 8px;">
+                                    <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #666;">Scan to connect</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Section 2: Bookings -->
@@ -181,7 +238,8 @@
                     </div>
                     
                     <div class="table-container">
-                        <table class="data-table">
+                        <div class="table-responsive">
+                            <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Parent Name</th>
@@ -190,21 +248,24 @@
                                     <th>Additional Notes</th>
                                     <th>Created At</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="bookingsTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center">Loading booking records...</td>
+                                    <td colspan="7" class="text-center">Loading booking records...</td>
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Section 3: Email Dispatch -->
                 <section id="tab-emails" class="tab-content">
                     <div class="table-container">
-                        <table class="data-table">
+                        <div class="table-responsive">
+                            <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Log ID</th>
@@ -222,6 +283,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </section>
 
@@ -306,7 +368,8 @@
                             <div class="analytics-panel">
                                 <h3>Recent Visitor Sessions</h3>
                                 <div class="table-container small">
-                                    <table class="data-table">
+                                    <div class="table-responsive">
+                            <table class="data-table">
                                         <thead>
                                             <tr>
                                                 <th>Session ID</th>
@@ -321,6 +384,7 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                        </div>
                                 </div>
                             </div>
 
@@ -328,7 +392,8 @@
                             <div class="analytics-panel">
                                 <h3>Live Event Feed</h3>
                                 <div class="table-container small">
-                                    <table class="data-table">
+                                    <div class="table-responsive">
+                            <table class="data-table">
                                         <thead>
                                             <tr>
                                                 <th>Time</th>
@@ -343,6 +408,7 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                        </div>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +440,8 @@
                         <div class="analytics-panel">
                             <h3>Active Administrative Credentials</h3>
                             <div class="table-container">
-                                <table class="data-table">
+                                <div class="table-responsive">
+                            <table class="data-table">
                                     <thead>
                                         <tr>
                                             <th>Username</th>
@@ -387,6 +454,7 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                        </div>
                             </div>
                         </div>
                     </div>
@@ -405,6 +473,153 @@
                     <!-- Grid of existing banners -->
                     <div class="banners-grid" id="bannersGrid">
                         <!-- Dynamic banner cards will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Section 7: Site Settings -->
+                <section id="tab-settings" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Site Settings</h3>
+                            <p class="section-subtitle">Update the public-facing contact information displayed on the main website.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-form-card glass-card" style="max-width: 700px; padding: 30px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                        <form id="siteSettingsForm">
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="setting_contact_phone" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">📞 Phone Number</label>
+                                <input type="text" id="setting_contact_phone" name="contact_phone" placeholder="+254 743-322-975" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px;">
+                            </div>
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="setting_contact_email" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">✉️ Email Address</label>
+                                <input type="email" id="setting_contact_email" name="contact_email" placeholder="geniusminds2425@gmail.com" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px;">
+                            </div>
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="setting_contact_location" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">📍 Location</label>
+                                <input type="text" id="setting_contact_location" name="contact_location" placeholder="Nairobi, Kenya" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px;">
+                            </div>
+                            <div style="display:flex; gap:12px; align-items:center; margin-top:24px;">
+                                <button type="submit" class="btn btn-primary" id="saveSettingsBtn">💾 Save Settings</button>
+                                <span id="settingsSaveStatus" style="color:#10b981; font-size:14px; display:none;">✅ Saved successfully!</span>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Section 8: Pages & Content -->
+                <section id="tab-pages" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Page Content</h3>
+                            <p class="section-subtitle">Edit main text sections for the website such as Mission, Vision, and Teaching Philosophy.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-form-card glass-card" style="max-width: 800px; padding: 30px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                        <form id="pagesContentForm">
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="content_mission_statement" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">🎯 Mission Statement</label>
+                                <textarea id="content_mission_statement" name="mission_statement" rows="3" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px; resize:vertical;"></textarea>
+                            </div>
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="content_vision" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">👁️ Vision Statement</label>
+                                <textarea id="content_vision" name="vision" rows="3" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px; resize:vertical;"></textarea>
+                            </div>
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="content_history" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">📜 History of Organization</label>
+                                <textarea id="content_history" name="history" rows="4" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px; resize:vertical;"></textarea>
+                            </div>
+                            <div class="form-group-glass" style="margin-bottom: 20px;">
+                                <label for="content_teaching_philosophy" style="display:block; margin-bottom:6px; font-weight:600; color:#cbd5e1;">💡 Teaching Philosophy</label>
+                                <textarea id="content_teaching_philosophy" name="teaching_philosophy" rows="4" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:15px; resize:vertical;"></textarea>
+                            </div>
+                            <div style="display:flex; gap:12px; align-items:center; margin-top:24px;">
+                                <button type="submit" class="btn btn-primary" id="savePagesBtn">💾 Save Content</button>
+                                <span id="pagesSaveStatus" style="color:#10b981; font-size:14px; display:none;">✅ Content updated successfully!</span>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Section 9: Team Members -->
+                <section id="tab-team" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Team Members</h3>
+                            <p class="section-subtitle">Add, edit, or remove teaching staff and specialists shown on the About Us page.</p>
+                        </div>
+                        <button id="addTeamBtn" class="btn btn-primary">➕ Add Team Member</button>
+                    </div>
+                    <div class="banners-grid" id="teamGrid">
+                        <!-- Dynamic team cards will load here -->
+                    </div>
+                </section>
+
+                <!-- Section 10: Courses / Programs -->
+                <section id="tab-courses" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Courses & Programs</h3>
+                            <p class="section-subtitle">Create and update grade levels, subjects, fees, and outcomes for your learning programs.</p>
+                        </div>
+                        <button id="addCourseBtn" class="btn btn-primary">➕ Add Course</button>
+                    </div>
+                    <div class="table-container glass-card">
+                        <table class="data-table" id="coursesTable">
+                            <thead>
+                                <tr>
+                                    <th>Program Title</th>
+                                    <th>Grade Levels</th>
+                                    <th>Duration</th>
+                                    <th>Fees</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coursesTableBody">
+                                <!-- Dynamic courses rows will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 11: FAQs -->
+                <section id="tab-faqs" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage FAQ List</h3>
+                            <p class="section-subtitle">Manage frequently asked questions, answers, and sorting orders for the FAQ page.</p>
+                        </div>
+                        <button id="addFaqBtn" class="btn btn-primary">➕ Add FAQ</button>
+                    </div>
+                    <div class="table-container glass-card">
+                        <table class="data-table" id="faqsTable">
+                            <thead>
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Category</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="faqsTableBody">
+                                <!-- Dynamic faqs rows will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 12: Blog & News -->
+                <section id="tab-blog" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Blog & News Articles</h3>
+                            <p class="section-subtitle">Publish articles, study tips, or company news. Edit or delete existing posts.</p>
+                        </div>
+                        <button id="addBlogBtn" class="btn btn-primary">➕ Add Blog Post</button>
+                    </div>
+                    <div class="banners-grid" id="blogGrid">
+                        <!-- Dynamic blog posts will load here -->
                     </div>
                 </section>
             </div>
@@ -582,6 +797,221 @@
                     <div class="modal-actions">
                         <button type="button" class="btn btn-outline" id="bannerCancelBtn">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="bannerSubmitBtn">Save Banner</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Chat Panel (Slide-in) -->
+    <div class="booking-chat-overlay" id="bookingChatOverlay">
+        <div class="booking-chat-panel" id="bookingChatPanel">
+            <div class="chat-panel-header">
+                <div class="chat-panel-title">
+                    <h3 id="chatPanelName">Customer Chat</h3>
+                    <span class="chat-panel-subtitle" id="chatPanelSubtitle">Booking #---</span>
+                </div>
+                <button class="chat-panel-close" id="chatPanelClose">&times;</button>
+            </div>
+            <div class="chat-panel-body" id="chatPanelMessages">
+                <!-- Messages rendered here -->
+            </div>
+            <div class="chat-panel-footer" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; gap: 12px; width: 100%;">
+                    <button id="adminChatAttachBtn" class="attach-btn" type="button" title="Attach file">📎</button>
+                    <input type="text" id="adminChatInput" class="chat-panel-input" placeholder="Type a reply..." autocomplete="off">
+                    <button id="adminChatSendBtn" class="chat-panel-send">Send</button>
+                </div>
+                <div id="adminFilePreviewChip" style="display:none;" class="file-preview-chip">
+                    <span>📎</span>
+                    <span class="chip-name" id="adminChipName"></span>
+                    <span class="chip-remove" id="adminChipRemove" title="Remove">✕</span>
+                </div>
+                <input type="file" id="adminFileInput" style="display:none" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Member Add/Edit Modal -->
+    <div class="modal" id="teamModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="teamModalTitle">Add Team Member</h3>
+                <button class="modal-close" id="teamModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="teamForm" enctype="multipart/form-data">
+                    <input type="hidden" id="teamId" name="id">
+                    <div class="form-group-glass">
+                        <label for="team_name">Full Name *</label>
+                        <input type="text" id="team_name" name="name" required placeholder="e.g. Teacher Esther">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="team_role">Role / Position *</label>
+                        <input type="text" id="team_role" name="role" required placeholder="e.g. Lead Mathematics Tutor">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="team_bio">Bio / Description</label>
+                        <textarea id="team_bio" name="bio" rows="4" placeholder="Briefly describe background, credentials, and achievements..."></textarea>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="team_display_order">Display Order</label>
+                        <input type="number" id="team_display_order" name="display_order" value="0" placeholder="0">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="team_image">Photo (Auto-processed)</label>
+                        <input type="file" id="team_image" name="image" accept="image/*">
+                        <p class="file-help-text">Select an avatar/photo. Leave empty when editing to keep current.</p>
+                        <div id="teamImagePreviewContainer" style="display: none; margin-top: 10px;">
+                            <img id="teamImagePreview" src="" alt="Team Member Preview" style="max-height: 100px; border-radius: 8px;">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="teamCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="teamSubmitBtn">Save Team Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Add/Edit Modal -->
+    <div class="modal" id="courseModal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="courseModalTitle">Add Course / Program</h3>
+                <button class="modal-close" id="courseModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="courseForm">
+                    <input type="hidden" id="courseId" name="id">
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="course_title">Program Title *</label>
+                            <input type="text" id="course_title" name="title" required placeholder="e.g. IGCSE Prep & Support">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="course_grade_levels">Target Grade Levels</label>
+                            <input type="text" id="course_grade_levels" name="grade_levels" placeholder="e.g. Year 9 - Year 11">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="course_duration">Duration / Frequency</label>
+                            <input type="text" id="course_duration" name="duration" placeholder="e.g. Flexible (hourly/weekly)">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="course_fees">Fees / Pricing</label>
+                            <input type="text" id="course_fees" name="fees" placeholder="e.g. From KES 2,500/hour">
+                        </div>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="course_subjects">Supported Subjects</label>
+                        <input type="text" id="course_subjects" name="subjects" placeholder="e.g. Mathematics, Physics, Chemistry">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="course_description">Program Description</label>
+                        <textarea id="course_description" name="description" rows="3" placeholder="Describe the program syllabus structure..."></textarea>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="course_outcomes">Learning Outcomes</label>
+                        <textarea id="course_outcomes" name="outcomes" rows="3" placeholder="What will the learner achieve? (Separate by lines or bullet points)"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="courseCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="courseSubmitBtn">Save Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Add/Edit Modal -->
+    <div class="modal" id="faqModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="faqModalTitle">Add FAQ</h3>
+                <button class="modal-close" id="faqModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="faqForm">
+                    <input type="hidden" id="faqId" name="id">
+                    <div class="form-group-glass">
+                        <label for="faq_question">Question *</label>
+                        <input type="text" id="faq_question" name="question" required placeholder="e.g. How does scheduling work?">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="faq_answer">Answer *</label>
+                        <textarea id="faq_answer" name="answer" rows="4" required placeholder="Provide a detailed helpful answer..."></textarea>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="faq_category">Category</label>
+                        <select id="faq_category" name="category">
+                            <option value="General">General</option>
+                            <option value="Programs">Programs & Curricula</option>
+                            <option value="Tutors">Tutors & Vetting</option>
+                            <option value="Scheduling">Scheduling & Logistics</option>
+                            <option value="Assessment">Assessment & Progress</option>
+                        </select>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="faq_display_order">Display Order</label>
+                        <input type="number" id="faq_display_order" name="display_order" value="0" placeholder="0">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="faqCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="faqSubmitBtn">Save FAQ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blog Post Add/Edit Modal -->
+    <div class="modal" id="blogModal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="blogModalTitle">Add Blog Post</h3>
+                <button class="modal-close" id="blogModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="blogForm" enctype="multipart/form-data">
+                    <input type="hidden" id="blogId" name="id">
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="blog_title">Post Title *</label>
+                            <input type="text" id="blog_title" name="title" required placeholder="e.g. Choosing the Right Curriculum in Kenya">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="blog_category">Category</label>
+                            <input type="text" id="blog_category" name="category" placeholder="e.g. Education Trends, Study Tips">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="blog_author">Author</label>
+                            <input type="text" id="blog_author" name="author" value="Admin Team" placeholder="e.g. Admin Team, Esther W.">
+                        </div>
+                        <div class="form-group-glass">
+                            <label for="blog_excerpt">Short Excerpt *</label>
+                            <input type="text" id="blog_excerpt" name="excerpt" required placeholder="A brief summary for previews...">
+                        </div>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="blog_content">Article Content *</label>
+                        <textarea id="blog_content" name="content" rows="12" required placeholder="Write the main blog article content here... (Plain text or markdown)"></textarea>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="blog_image">Featured Image (Auto-processed)</label>
+                        <input type="file" id="blog_image" name="image" accept="image/*">
+                        <p class="file-help-text">Select a featured blog photo. Leave empty when editing to keep current.</p>
+                        <div id="blogImagePreviewContainer" style="display: none; margin-top: 10px;">
+                            <img id="blogImagePreview" src="" alt="Blog Preview" style="max-height: 100px; border-radius: 8px;">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="blogCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="blogSubmitBtn">Publish Post</button>
                     </div>
                 </form>
             </div>
