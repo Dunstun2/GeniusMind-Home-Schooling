@@ -12,6 +12,22 @@ const cors = require('cors');
 require('dotenv').config({ override: true });
 const whatsappService = require('./utils/whatsappService');
 
+// --- Custom Error Logger for cPanel ---
+const logStream = fs.createWriteStream(path.join(__dirname, 'app-errors.log'), { flags: 'a' });
+const originalConsoleError = console.error;
+console.error = function (...args) {
+    originalConsoleError.apply(console, args);
+    const msg = args.map(a => (typeof a === 'object' && a instanceof Error) ? a.stack : (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
+    logStream.write(`[${new Date().toISOString()}] ERROR: ${msg}\n`);
+};
+const originalConsoleWarn = console.warn;
+console.warn = function (...args) {
+    originalConsoleWarn.apply(console, args);
+    const msg = args.map(a => (typeof a === 'object' && a instanceof Error) ? a.stack : (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
+    logStream.write(`[${new Date().toISOString()}] WARN: ${msg}\n`);
+};
+// --------------------------------------
+
 let sqlite3 = null;
 let sqliteOpen = null;
 let sqliteAvailable = false;
