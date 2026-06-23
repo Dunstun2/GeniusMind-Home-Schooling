@@ -8,6 +8,13 @@ deployment:
     - /bin/cp -r public $DEPLOYPATH/
     - /bin/cp -r utils $DEPLOYPATH/
     - /bin/cp index.html $DEPLOYPATH/
+    - /bin/cp about.html $DEPLOYPATH/
+    - /bin/cp blog-post.html $DEPLOYPATH/
+    - /bin/cp blog.html $DEPLOYPATH/
+    - /bin/cp contact.html $DEPLOYPATH/
+    - /bin/cp courses.html $DEPLOYPATH/
+    - /bin/cp faq.html $DEPLOYPATH/
+    - /bin/cp -r components $DEPLOYPATH/
     - /bin/cp styles.css $DEPLOYPATH/
     - /bin/cp script.js $DEPLOYPATH/
     - /bin/cp analytics.js $DEPLOYPATH/
