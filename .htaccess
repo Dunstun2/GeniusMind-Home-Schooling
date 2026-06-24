@@ -1,0 +1,13 @@
+PassengerEnabled on
+
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/vdranjxy/geniusminds"
+PassengerBaseURI "/"
+PassengerNodejs "/home/vdranjxy/nodevenv/geniusminds/20/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+# Debugging options to show error page instead of Directory Index
+PassengerFriendlyErrorPages on
+PassengerAppEnv development
