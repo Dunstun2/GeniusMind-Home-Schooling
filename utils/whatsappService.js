@@ -43,7 +43,29 @@ class WhatsAppService {
         this.client = new Client({
             authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
             puppeteer: {
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process',
+                    '--disable-extensions',
+                    '--disable-software-rasterizer',
+                    '--disable-features=site-per-process',
+                    '--disable-background-networking',
+                    '--disable-default-apps',
+                    '--disable-translate',
+                    '--disable-sync',
+                    '--metrics-recording-only',
+                    '--mute-audio',
+                    '--no-default-browser-check',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding'
+                ]
             }
         });
 
