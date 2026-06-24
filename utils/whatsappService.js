@@ -4,13 +4,17 @@
 let Client, LocalAuth;
 let whatsappAvailable = false;
 
-try {
-    const wwebjs = require('whatsapp-web.js');
-    Client = wwebjs.Client;
-    LocalAuth = wwebjs.LocalAuth;
-    whatsappAvailable = true;
-} catch (e) {
-    console.warn('⚠️ whatsapp-web.js not available (requires Puppeteer/Chromium). WhatsApp notifications are disabled.');
+if (process.env.DISABLE_WHATSAPP === 'true') {
+    console.warn('📱 WhatsApp is disabled via DISABLE_WHATSAPP environment variable.');
+} else {
+    try {
+        const wwebjs = require('whatsapp-web.js');
+        Client = wwebjs.Client;
+        LocalAuth = wwebjs.LocalAuth;
+        whatsappAvailable = true;
+    } catch (e) {
+        console.warn('⚠️ whatsapp-web.js not available (requires Puppeteer/Chromium). WhatsApp notifications are disabled.');
+    }
 }
 
 const qrcodeTerminal = require('qrcode-terminal');
@@ -30,7 +34,7 @@ class WhatsAppService {
 
     initialize() {
         if (!whatsappAvailable) {
-            console.warn('⚠️ WhatsApp unavailable: whatsapp-web.js not installed.');
+            console.warn('⚠️ WhatsApp unavailable or disabled: whatsapp-web.js not installed or DISABLE_WHATSAPP is true.');
             return;
         }
 

@@ -908,6 +908,29 @@ async function initDatabase() {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
 
+            await dbPool.query(`
+                CREATE TABLE IF NOT EXISTS site_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    setting_key VARCHAR(255) NOT NULL,
+                    setting_value TEXT DEFAULT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY idx_setting_key (setting_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+
+            // Seed default settings in MySQL if empty
+            const [settingsCount] = await dbPool.query('SELECT COUNT(*) as count FROM site_settings');
+            if (settingsCount[0].count === 0) {
+                await dbPool.query(`
+                    INSERT INTO site_settings (setting_key, setting_value) VALUES 
+                    ('contact_phone', '+254 743-322-975'),
+                    ('contact_email', 'geniusminds2425@gmail.com'),
+                    ('contact_location', 'Nairobi, Kenya')
+                `);
+                console.log('✨ Seeded default site settings in MySQL.');
+            }
+
             // Migrations (safe – ignored if column already exists)
             try { await dbPool.query("ALTER TABLE analytics_sessions ADD COLUMN country_name VARCHAR(100) DEFAULT 'Kenya'"); } catch (e) {}
             try { await dbPool.query("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) {}

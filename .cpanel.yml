@@ -3,6 +3,6 @@ deployment:
   tasks:
     - export DEPLOYPATH=$HOME/geniusminds
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -rf * $DEPLOYPATH/
+    - rsync -rlptD --exclude='.git' --exclude='node_modules' --exclude='.wwebjs_auth' --exclude='.wwebjs_cache' --exclude='database.sqlite' --exclude='uploads' --exclude='scratch' --exclude='*.log' --exclude='.env' --exclude='.env.production' ./ $DEPLOYPATH/
     - /bin/mkdir -p $DEPLOYPATH/tmp
     - /bin/touch $DEPLOYPATH/tmp/restart.txt
