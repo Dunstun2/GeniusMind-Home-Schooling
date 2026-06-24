@@ -312,6 +312,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     qrContainer.style.display = 'none';
                     if (disconnectBtn) disconnectBtn.style.display = 'none';
                     shouldPollFast = true;
+                } else if (data.status === 'unavailable') {
+                    statusText.textContent = 'Disabled 📵';
+                    statusText.style.color = '#9ca3af';
+                    qrContainer.style.display = 'none';
+                    if (disconnectBtn) disconnectBtn.style.display = 'none';
                 } else {
                     statusText.textContent = data.status || 'Unknown';
                     statusText.style.color = '#666';
