@@ -1,24 +1,24 @@
-// WhatsApp Service - Graceful stub when whatsapp-web.js is unavailable (e.g. cPanel shared hosting)
-// On environments with Puppeteer/Chromium support, install whatsapp-web.js to enable full functionality.
+// WhatsApp Service - Baileys implementation for cPanel production compatibility.
+// No Puppeteer/Chromium dependencies needed.
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const pino = require('pino');
+const fs = require('fs');
+const path = require('path');
+const qrcode = require('qrcode');
 
-let Client, LocalAuth;
+const sessionPath = path.join(__dirname, '..', '.wwebjs_auth');
+
 let whatsappAvailable = false;
-
 if (process.env.DISABLE_WHATSAPP === 'true') {
     console.warn('📱 WhatsApp is disabled via DISABLE_WHATSAPP environment variable.');
 } else {
     try {
-        const wwebjs = require('whatsapp-web.js');
-        Client = wwebjs.Client;
-        LocalAuth = wwebjs.LocalAuth;
+        require('@whiskeysockets/baileys');
         whatsappAvailable = true;
     } catch (e) {
-        console.warn('⚠️ whatsapp-web.js not available (requires Puppeteer/Chromium). WhatsApp notifications are disabled.');
+        console.warn('⚠️ @whiskeysockets/baileys not available. WhatsApp notifications are disabled.');
     }
 }
-
-const qrcodeTerminal = require('qrcode-terminal');
-const qrcode = require('qrcode');
 
 class WhatsAppService {
     constructor() {
@@ -32,90 +32,90 @@ class WhatsAppService {
         }
     }
 
-    initialize() {
-        if (!whatsappAvailable) {
-            console.warn('⚠️ WhatsApp unavailable or disabled: whatsapp-web.js not installed or DISABLE_WHATSAPP is true.');
+    async initialize() {
+        if (!whatsappAvailable || process.env.DISABLE_WHATSAPP === 'true') {
+            console.warn('⚠️ WhatsApp unavailable or disabled: @whiskeysockets/baileys not installed or DISABLE_WHATSAPP is true.');
+            this.status = 'unavailable';
             return;
         }
 
-        console.log('📱 Initializing WhatsApp Web Client...');
-        
-        this.client = new Client({
-            authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
-            puppeteer: {
-                headless: true,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
-                    '--disable-extensions',
-                    '--disable-software-rasterizer',
-                    '--disable-features=site-per-process',
-                    '--disable-background-networking',
-                    '--disable-default-apps',
-                    '--disable-translate',
-                    '--disable-sync',
-                    '--metrics-recording-only',
-                    '--mute-audio',
-                    '--no-default-browser-check',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding'
-                ]
-            }
-        });
+        console.log('📱 Initializing WhatsApp Web Client via Baileys...');
+        this.status = 'disconnected';
 
-        this.client.on('qr', async (qr) => {
-            console.log('📱 Scan the QR code below to authenticate WhatsApp:');
-            qrcodeTerminal.generate(qr, { small: true });
-            this.status = 'authenticating';
-            
-            try {
-                this.qrCodeDataUrl = await qrcode.toDataURL(qr);
-            } catch (err) {
-                console.error('Failed to generate QR Data URL:', err);
-            }
-        });
+        try {
+            // Fetch the latest WhatsApp Web version to prevent 405 Method Not Allowed errors
+            const { version } = await fetchLatestBaileysVersion();
+            console.log(`📱 Using WhatsApp Web version: ${version.join('.')}`);
 
-        this.client.on('ready', () => {
-            console.log('✅ WhatsApp Client is ready!');
-            this.status = 'ready';
-            this.qrCodeDataUrl = null;
-        });
+            const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-        this.client.on('authenticated', () => {
-            console.log('✅ WhatsApp Authenticated!');
-        });
+            this.client = makeWASocket({
+                version,
+                auth: state,
+                logger: pino({ level: 'silent' }), // Suppress Baileys verbose logs
+                browser: ['Genius Minds', 'Chrome', '120.0.0'],
+                printQRInTerminal: false
+            });
 
-        this.client.on('auth_failure', (msg) => {
-            console.error('❌ WhatsApp Authentication failure:', msg);
-            this.status = 'error';
-        });
+            this.client.ev.on('creds.update', saveCreds);
 
-        this.client.on('disconnected', (reason) => {
-            console.warn('⚠️ WhatsApp Client was disconnected:', reason);
-            this.status = 'disconnected';
-            this.qrCodeDataUrl = null;
-            
-            if (this.isDisconnecting) {
-                console.log('📱 Disconnect triggered manually, skipping auto-reinitialize in event handler.');
-                return;
-            }
-            
-            // Try to reinitialize after some time
-            setTimeout(() => {
-                this.initialize();
-            }, 5000);
-        });
+            this.client.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect, qr } = update;
 
-        this.client.initialize().catch(err => {
+                if (qr) {
+                    console.log('📱 New WhatsApp QR Code generated!');
+                    this.status = 'authenticating';
+                    try {
+                        this.qrCodeDataUrl = await qrcode.toDataURL(qr);
+                    } catch (err) {
+                        console.error('Failed to generate QR Data URL:', err);
+                    }
+                }
+
+                if (connection === 'open') {
+                    console.log('✅ WhatsApp Client is ready!');
+                    this.status = 'ready';
+                    this.qrCodeDataUrl = null;
+                }
+
+                if (connection === 'close') {
+                    const statusCode = lastDisconnect?.error?.output?.statusCode;
+                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+                    console.warn(`⚠️ WhatsApp Client connection closed. Reason Code: ${statusCode}. Reconnecting: ${shouldReconnect}`);
+                    
+                    this.status = 'disconnected';
+                    this.qrCodeDataUrl = null;
+
+                    if (this.isDisconnecting) {
+                        console.log('📱 Disconnect triggered manually, skipping auto-reinitialize.');
+                        return;
+                    }
+
+                    if (shouldReconnect) {
+                        setTimeout(() => this.initialize(), 5000);
+                    } else {
+                        console.log('📱 Logged out of WhatsApp. Cleaning up session and generating new QR...');
+                        this.cleanSessionDir();
+                        setTimeout(() => this.initialize(), 2000);
+                    }
+                }
+            });
+        } catch (err) {
             console.error('Failed to initialize WhatsApp client:', err);
             this.status = 'error';
-        });
+        }
+    }
+
+    cleanSessionDir() {
+        try {
+            if (fs.existsSync(sessionPath)) {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                console.log('✅ Cleaned up WhatsApp session directory.');
+            }
+        } catch (fsErr) {
+            console.error('❌ Failed to delete session directory:', fsErr);
+        }
     }
 
     formatPhoneNumber(phone) {
@@ -131,7 +131,7 @@ class WhatsAppService {
             cleaned = '254' + cleaned;
         }
         
-        return cleaned + '@c.us';
+        return cleaned + '@s.whatsapp.net';
     }
 
     async sendMessage(phone, message) {
@@ -149,7 +149,7 @@ class WhatsAppService {
         if (!formattedPhone) return false;
 
         try {
-            await this.client.sendMessage(formattedPhone, message);
+            await this.client.sendMessage(formattedPhone, { text: message });
             console.log(`📱 WhatsApp message sent to ${formattedPhone}`);
             return true;
         } catch (error) {
@@ -172,28 +172,19 @@ class WhatsAppService {
         } catch (err) {
             console.error('❌ Error logging out WhatsApp Client:', err);
         }
-        
+
         try {
-            await this.client.destroy();
-            console.log('✅ WhatsApp Client Puppeteer browser destroyed.');
-        } catch (destroyErr) {
-            console.error('❌ Error destroying WhatsApp Client:', destroyErr);
-        }
-        
-        // Force clean up of session files to prevent stale logins
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            const sessionPath = path.join(__dirname, '..', '.wwebjs_auth');
-            if (fs.existsSync(sessionPath)) {
-                fs.rmSync(sessionPath, { recursive: true, force: true });
-                console.log('✅ Cleaned up WhatsApp session directory.');
-            }
-        } catch (fsErr) {
-            console.error('❌ Failed to delete session directory:', fsErr);
+            this.client.end(undefined);
+            console.log('✅ WhatsApp Client socket ended.');
+        } catch (err) {
+            // Ignore socket end errors
         }
 
+        this.cleanSessionDir();
+        this.client = null;
         this.isDisconnecting = false;
+        
+        // Reinitialize to generate a new QR code immediately
         this.initialize();
     }
 
