@@ -18,7 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let gaTimeline = {};
     let gaReferrers = [];
     let gaEvents = [];
+    let gaTopPages = [];
     let activeGATab = 'devices'; // 'devices' or 'browsers'
+    
+    // Analytics Date Range State
+    let analyticsStart = new Date(); analyticsStart.setDate(analyticsStart.getDate() - 30);
+    let analyticsEnd = new Date();
+    let analyticsGroupBy = 'day';
 
     // Mobile Sidebar Toggling
     const mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
@@ -201,6 +207,78 @@ document.addEventListener('DOMContentLoaded', () => {
             gaTabDevicesBtn.classList.remove('active');
             activeGATab = 'browsers';
             renderGATabs();
+        });
+    }
+
+    // Analytics Date Range Picker Logic
+    const presetBtns = document.querySelectorAll('.date-preset-btn');
+    const customStartInput = document.getElementById('analyticsStartDate');
+    const customEndInput = document.getElementById('analyticsEndDate');
+    const applyDateRangeBtn = document.getElementById('applyDateRange');
+    const analyticsRangeLabel = document.getElementById('analyticsRangeLabel');
+
+    if (presetBtns.length > 0) {
+        function updateDateInputs(start, end) {
+            customStartInput.value = start.toISOString().split('T')[0];
+            customEndInput.value = end.toISOString().split('T')[0];
+            analyticsStart = start;
+            analyticsEnd = end;
+        }
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                presetBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const preset = btn.getAttribute('data-preset');
+                const end = new Date();
+                let start = new Date();
+                let label = btn.textContent;
+                
+                if (preset === 'today') {
+                    start.setHours(0,0,0,0);
+                } else if (preset === '7d') {
+                    start.setDate(end.getDate() - 7);
+                } else if (preset === '30d') {
+                    start.setDate(end.getDate() - 30);
+                } else if (preset === 'month') {
+                    start = new Date(end.getFullYear(), end.getMonth(), 1);
+                } else if (preset === 'year') {
+                    start = new Date(end.getFullYear(), 0, 1);
+                }
+                
+                updateDateInputs(start, end);
+                analyticsRangeLabel.textContent = label;
+                loadAnalytics();
+            });
+        });
+
+        if (applyDateRangeBtn) {
+            applyDateRangeBtn.addEventListener('click', () => {
+                if (customStartInput.value && customEndInput.value) {
+                    presetBtns.forEach(b => b.classList.remove('active'));
+                    analyticsStart = new Date(customStartInput.value);
+                    analyticsEnd = new Date(customEndInput.value);
+                    analyticsRangeLabel.textContent = `Custom: ${analyticsStart.toLocaleDateString()} - ${analyticsEnd.toLocaleDateString()}`;
+                    loadAnalytics();
+                }
+            });
+        }
+        
+        // Initialize with default 30d
+        const initEnd = new Date();
+        const initStart = new Date(); initStart.setDate(initEnd.getDate() - 30);
+        updateDateInputs(initStart, initEnd);
+        
+        // Group By Tabs for Timeline
+        const groupBtns = document.querySelectorAll('.ga-groupby-btn');
+        groupBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                groupBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                analyticsGroupBy = btn.getAttribute('data-group');
+                loadAnalyticsTimeline();
+            });
         });
     }
 
@@ -401,8 +479,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadAnalytics() {
         try {
+            const dateQuery = `?startDate=${analyticsStart.toISOString()}&endDate=${analyticsEnd.toISOString()}`;
+            
             // 1. Fetch live metrics calculations
-            const statsRes = await fetch('/api/admin/stats');
+            const statsRes = await fetch(`/api/admin/stats${dateQuery}`);
             if (statsRes.status === 401) return window.location.href = '/admin/login.html';
             const statsData = await statsRes.json();
             
@@ -410,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gaTimeline = statsData.timeline || {};
             gaReferrers = statsData.topReferrers || [];
             gaEvents = statsData.eventsGA || [];
+            gaTopPages = statsData.topPages || [];
             
             // 2. Fetch raw sessions & events for diagnostic tables
             const rawRes = await fetch('/api/admin/analytics');
@@ -418,10 +499,50 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Render Google Analytics widgets
             renderGAWidgets();
             
-            // 4. Render raw logs tables
+            // 4. Load specialized endpoints
+            loadAnalyticsTimeline();
+            
+            // 5. Render raw logs tables
             renderAnalyticsTables(rawData.sessions, rawData.events);
         } catch (err) {
             console.error('Error fetching analytics:', err);
+        }
+    }
+
+    async function loadAnalyticsTimeline() {
+        try {
+            const dateQuery = `?startDate=${analyticsStart.toISOString()}&endDate=${analyticsEnd.toISOString()}&groupBy=${analyticsGroupBy}`;
+            const res = await fetch(`/api/admin/analytics/timeline${dateQuery}`);
+            const data = await res.json();
+            
+            const list = document.getElementById('gaTimelineSummaryList');
+            if (!list) return;
+            
+            list.innerHTML = '';
+            if (!data.timeline || data.timeline.length === 0) {
+                list.innerHTML = `<div class="ga-empty-state"><span class="ga-empty-title">No timeline data found</span></div>`;
+                return;
+            }
+            
+            // Sort so most recent is first
+            const sorted = data.timeline;
+            let maxPageviews = 0;
+            sorted.forEach(t => { if (t.pageviews > maxPageviews) maxPageviews = t.pageviews; });
+            
+            sorted.forEach(t => {
+                const percentage = maxPageviews > 0 ? Math.round((t.pageviews / maxPageviews) * 100) : 0;
+                list.innerHTML += `
+                    <div class="ga-row">
+                        <span class="ga-label-text">${t.label}</span>
+                        <div class="ga-bar-wrapper">
+                            <div class="ga-bar-fill" style="width: ${percentage}%; background-color: #6366f1;"></div>
+                        </div>
+                        <span class="ga-col-val" style="margin-left:auto; padding-right:15px; color:#9ca3af;">V: ${t.sessions}</span>
+                        <span class="ga-col-val">P: ${t.pageviews}</span>
+                    </div>`;
+            });
+        } catch (err) {
+            console.error('Error fetching timeline summary:', err);
         }
     }
 
@@ -546,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Render Devices vs Browsers Tabs
         renderGATabs();
 
-        // 5. Render Events GA List (Matching GA table list or showing the beautiful empty state)
+        // 5. Render Events GA List
         const eventsList = document.getElementById('gaEventsList');
         eventsList.innerHTML = '';
         
@@ -568,6 +689,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="ga-col-val">${e.total}</span>
                     </div>`;
             });
+        }
+
+        // 6. Render Top Pages List
+        const pagesList = document.getElementById('gaPagesList');
+        if (pagesList) {
+            pagesList.innerHTML = '';
+            if (gaTopPages.length === 0) {
+                pagesList.innerHTML = `
+                    <div class="ga-empty-state">
+                        <div class="ga-empty-icon">📄</div>
+                        <div class="ga-empty-title">No pageviews yet</div>
+                    </div>`;
+            } else {
+                let maxViews = 0;
+                gaTopPages.forEach(p => { if (p.views > maxViews) maxViews = p.views; });
+                
+                gaTopPages.forEach(p => {
+                    const percentage = maxViews > 0 ? Math.round((p.views / maxViews) * 100) : 0;
+                    pagesList.innerHTML += `
+                        <div class="ga-row">
+                            <span class="ga-label-text" title="${p.page}">${p.page}</span>
+                            <div class="ga-bar-wrapper">
+                                <div class="ga-bar-fill" style="width: ${percentage}%; background-color: #ec4899;"></div>
+                            </div>
+                            <span class="ga-col-val" style="margin-left:auto; padding-right:20px;">${p.visitors}</span>
+                            <span class="ga-col-val">${p.views}</span>
+                        </div>`;
+                });
+            }
         }
     }
 

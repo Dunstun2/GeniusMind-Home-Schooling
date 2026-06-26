@@ -1467,23 +1467,44 @@ async function generateMockEmails() {
 }
 
 
-// Helper to resolve country from client timezone
-function resolveCountry(timezone) {
-    if (!timezone) return { name: 'Kenya', flag: '🇰🇪' };
-    
-    const tz = timezone.toLowerCase();
-    if (tz.includes('nairobi')) return { name: 'Kenya', flag: '🇰🇪' };
-    if (tz.includes('kampala')) return { name: 'Uganda', flag: '🇺🇬' };
-    if (tz.includes('dar_es_salaam')) return { name: 'Tanzania', flag: '🇹🇿' };
-    if (tz.includes('kigali')) return { name: 'Rwanda', flag: '🇷🇼' };
-    if (tz.includes('london')) return { name: 'United Kingdom', flag: '🇬🇧' };
-    if (tz.includes('america/') || tz.includes('us/')) return { name: 'United States', flag: '🇺🇸' };
-    if (tz.includes('paris')) return { name: 'France', flag: '🇫🇷' };
-    if (tz.includes('berlin')) return { name: 'Germany', flag: '🇩🇪' };
-    if (tz.includes('tokyo')) return { name: 'Japan', flag: '🇯🇵' };
-    if (tz.includes('harare') || tz.includes('johannesburg') || tz.includes('cairo')) return { name: 'South Africa', flag: '🇿🇦' };
-    
-    return { name: 'Kenya', flag: '🇰🇪' }; // Default fallback
+// Real IP Geolocation using ip-api.com (free, no API key needed)
+// Results are cached in memory to avoid redundant lookups
+const geoCache = {};
+
+async function resolveCountryFromIP(ip) {
+    // Skip private/local IPs
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        return { name: 'Local / Dev', flag: '🖥️', city: 'Localhost', region: '' };
+    }
+    if (geoCache[ip]) return geoCache[ip];
+    try {
+        const https = require('https');
+        const result = await new Promise((resolve, reject) => {
+            const req = https.get(`https://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city`, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                    try { resolve(JSON.parse(data)); }
+                    catch (e) { reject(e); }
+                });
+            });
+            req.on('error', reject);
+            req.setTimeout(3000, () => { req.destroy(); reject(new Error('timeout')); });
+        });
+        if (result.status === 'success') {
+            const code = (result.countryCode || 'KE').toLowerCase();
+            // Build emoji flag from country code
+            const flag = result.countryCode
+                ? String.fromCodePoint(...[...result.countryCode.toUpperCase()].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)))
+                : '🌍';
+            const geo = { name: result.country || 'Unknown', flag, code, city: result.city || '', region: result.regionName || '' };
+            geoCache[ip] = geo;
+            return geo;
+        }
+    } catch (e) {
+        // Silent fallback
+    }
+    return { name: 'Unknown', flag: '🌍', code: 'xx', city: '', region: '' };
 }
 
 // Helper to parse User-Agent
@@ -1718,20 +1739,22 @@ app.post('/api/admin/bookings/:id/messages', requireAdmin, upload.single('attach
     }
 });
 
-// 2. Analytics Session Registration
+// 2. Analytics Session Registration (with real IP geolocation)
 app.post('/api/analytics/session', async (req, res) => {
-    const { sessionKey, referrer, timezone } = req.body;
+    const { sessionKey, referrer } = req.body;
     if (!sessionKey) return res.status(400).json({ error: 'Session key is required.' });
     
     const uaString = req.headers['user-agent'] || '';
-    const ip = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    const rawIp = (req.headers['x-forwarded-for'] || req.ip || '127.0.0.1').split(',')[0].trim();
     const parsedUa = parseUserAgent(uaString);
-    const country = resolveCountry(timezone);
+    
+    // Resolve real country from IP address
+    const geo = await resolveCountryFromIP(rawIp);
     
     try {
         await db.query(
             'INSERT INTO analytics_sessions (session_key, ip_address, user_agent, browser, os, device, referrer, country_name, country_flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP',
-            [sessionKey, ip, uaString, parsedUa.browser, parsedUa.os, parsedUa.device, referrer || '', country.name, country.flag]
+            [sessionKey, rawIp, uaString, parsedUa.browser, parsedUa.os, parsedUa.device, referrer || '', geo.name, geo.flag]
         );
         res.json({ success: true });
     } catch (err) {
@@ -1815,12 +1838,23 @@ app.get('/api/admin/check-session', (req, res) => {
 // ADMIN DASHBOARD APIS (Auth Required)
 // ==========================================
 
-// Get Analytics & Dashboard Statistics (Google Analytics Style)
+// Get Analytics & Dashboard Statistics with optional date range filtering
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+    // Date range filtering: default to last 30 days
+    const now = new Date();
+    const defaultStart = new Date(now); defaultStart.setDate(now.getDate() - 30);
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : defaultStart;
+    const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59') : now;
+
     try {
-        const bookings = await db.query('SELECT * FROM bookings ORDER BY created_at DESC');
-        const sessions = await db.query('SELECT * FROM analytics_sessions ORDER BY created_at DESC');
-        const events = await db.query('SELECT * FROM analytics_events ORDER BY created_at DESC');
+        const allBookings = await db.query('SELECT * FROM bookings ORDER BY created_at DESC');
+        const allSessions = await db.query('SELECT * FROM analytics_sessions ORDER BY created_at DESC');
+        const allEvents = await db.query('SELECT * FROM analytics_events ORDER BY created_at DESC');
+
+        // Filter by date range
+        const bookings = allBookings.filter(b => { const d = new Date(b.created_at); return d >= startDate && d <= endDate; });
+        const sessions = allSessions.filter(s => { const d = new Date(s.created_at); return d >= startDate && d <= endDate; });
+        const events = allEvents.filter(e => { const d = new Date(e.created_at); return d >= startDate && d <= endDate; });
         
         // 1. Basic Counts
         const totalBookings = bookings.length;
@@ -1925,28 +1959,50 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
             countries[cName].count++;
         });
         
-        // 8. Timeline (Recent 7 days)
+        // 8. Top Pages breakdown from pageview events
+        const pagesMap = {};
+        const pageVisitors = {};
+        events.filter(e => e.event_type === 'pageview').forEach(e => {
+            let pageLabel = 'Home';
+            try {
+                const data = typeof e.event_data === 'string' ? JSON.parse(e.event_data) : e.event_data;
+                if (data && data.page) pageLabel = data.page;
+                else if (data && data.url) {
+                    const url = data.url.toLowerCase();
+                    if (url.includes('about')) pageLabel = 'About';
+                    else if (url.includes('contact')) pageLabel = 'Contact';
+                    else if (url.includes('blog-post')) pageLabel = 'Blog Post';
+                    else if (url.includes('blog')) pageLabel = 'Blog';
+                    else if (url.includes('courses')) pageLabel = 'Courses';
+                    else if (url.includes('faq')) pageLabel = 'FAQ';
+                }
+            } catch (_) {}
+            pagesMap[pageLabel] = (pagesMap[pageLabel] || 0) + 1;
+            if (!pageVisitors[pageLabel]) pageVisitors[pageLabel] = new Set();
+            pageVisitors[pageLabel].add(e.session_key);
+        });
+        const topPages = Object.keys(pagesMap)
+            .map(page => ({ page, views: pagesMap[page], visitors: pageVisitors[page].size }))
+            .sort((a, b) => b.views - a.views);
+
+        // 9. Timeline grouped by day within date range
         const timeline = {};
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
+        const rangeDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const maxDays = Math.min(rangeDays, 90); // cap display to 90 days
+        for (let i = maxDays - 1; i >= 0; i--) {
+            const d = new Date(endDate);
             d.setDate(d.getDate() - i);
             const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             timeline[dateStr] = { pageviews: 0, sessions: 0 };
         }
-        
         sessions.forEach(s => {
             const dateStr = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if (timeline[dateStr]) {
-                timeline[dateStr].sessions++;
-            }
+            if (timeline[dateStr]) timeline[dateStr].sessions++;
         });
-        
         events.forEach(e => {
             if (e.event_type === 'pageview') {
                 const dateStr = new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                if (timeline[dateStr]) {
-                    timeline[dateStr].pageviews++;
-                }
+                if (timeline[dateStr]) timeline[dateStr].pageviews++;
             }
         });
 
@@ -1994,6 +2050,8 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
             timeline,
             topReferrers,
             eventsGA,
+            topPages,
+            dateRange: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
             breakdowns: {
                 services,
                 devices,
@@ -2005,6 +2063,124 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('Error fetching dashboard stats:', err);
         res.status(500).json({ error: 'Failed to fetch statistics.' });
+    }
+});
+
+// ==========================================
+// DEDICATED ANALYTICS ENDPOINTS
+// ==========================================
+
+// Timeline: Grouped visits by day/week/month with date range
+app.get('/api/admin/analytics/timeline', requireAdmin, async (req, res) => {
+    try {
+        const now = new Date();
+        const defaultStart = new Date(now); defaultStart.setDate(now.getDate() - 30);
+        const startDate = req.query.startDate ? new Date(req.query.startDate) : defaultStart;
+        const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59') : now;
+        const groupBy = req.query.groupBy || 'day'; // 'day', 'week', 'month'
+
+        const sessions = await db.query('SELECT * FROM analytics_sessions ORDER BY created_at DESC');
+        const events = await db.query('SELECT * FROM analytics_events ORDER BY created_at DESC');
+
+        const filteredSessions = sessions.filter(s => { const d = new Date(s.created_at); return d >= startDate && d <= endDate; });
+        const filteredEvents = events.filter(e => { const d = new Date(e.created_at); return d >= startDate && d <= endDate; });
+
+        function getGroupKey(date) {
+            const d = new Date(date);
+            if (groupBy === 'month') return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            if (groupBy === 'week') {
+                const weekStart = new Date(d);
+                weekStart.setDate(d.getDate() - d.getDay());
+                return weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        const timeline = {};
+        filteredSessions.forEach(s => {
+            const key = getGroupKey(s.created_at);
+            if (!timeline[key]) timeline[key] = { label: key, sessions: 0, pageviews: 0 };
+            timeline[key].sessions++;
+        });
+        filteredEvents.filter(e => e.event_type === 'pageview').forEach(e => {
+            const key = getGroupKey(e.created_at);
+            if (!timeline[key]) timeline[key] = { label: key, sessions: 0, pageviews: 0 };
+            timeline[key].pageviews++;
+        });
+
+        res.json({ timeline: Object.values(timeline), groupBy, startDate: startDate.toISOString(), endDate: endDate.toISOString() });
+    } catch (err) {
+        console.error('Error in analytics timeline:', err);
+        res.status(500).json({ error: 'Failed to fetch timeline.' });
+    }
+});
+
+// Top Pages: Ranked list with visits and unique visitors
+app.get('/api/admin/analytics/pages', requireAdmin, async (req, res) => {
+    try {
+        const now = new Date();
+        const defaultStart = new Date(now); defaultStart.setDate(now.getDate() - 30);
+        const startDate = req.query.startDate ? new Date(req.query.startDate) : defaultStart;
+        const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59') : now;
+
+        const events = await db.query('SELECT * FROM analytics_events ORDER BY created_at DESC');
+        const filtered = events.filter(e => {
+            const d = new Date(e.created_at);
+            return e.event_type === 'pageview' && d >= startDate && d <= endDate;
+        });
+
+        const pagesMap = {};
+        const pageVisitors = {};
+        filtered.forEach(e => {
+            let pageLabel = 'Home';
+            try {
+                const data = typeof e.event_data === 'string' ? JSON.parse(e.event_data) : e.event_data;
+                if (data && data.page) pageLabel = data.page;
+            } catch (_) {}
+            pagesMap[pageLabel] = (pagesMap[pageLabel] || 0) + 1;
+            if (!pageVisitors[pageLabel]) pageVisitors[pageLabel] = new Set();
+            pageVisitors[pageLabel].add(e.session_key);
+        });
+
+        const pages = Object.keys(pagesMap)
+            .map(page => ({ page, views: pagesMap[page], visitors: pageVisitors[page].size }))
+            .sort((a, b) => b.views - a.views);
+
+        res.json({ pages, total: filtered.length });
+    } catch (err) {
+        console.error('Error in analytics pages:', err);
+        res.status(500).json({ error: 'Failed to fetch page stats.' });
+    }
+});
+
+// Countries: Ranked with counts and percentages
+app.get('/api/admin/analytics/countries', requireAdmin, async (req, res) => {
+    try {
+        const now = new Date();
+        const defaultStart = new Date(now); defaultStart.setDate(now.getDate() - 30);
+        const startDate = req.query.startDate ? new Date(req.query.startDate) : defaultStart;
+        const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59') : now;
+
+        const sessions = await db.query('SELECT * FROM analytics_sessions ORDER BY created_at DESC');
+        const filtered = sessions.filter(s => { const d = new Date(s.created_at); return d >= startDate && d <= endDate; });
+
+        const countryMap = {};
+        filtered.forEach(s => {
+            const name = s.country_name || 'Unknown';
+            const flag = s.country_flag || '🌍';
+            if (!countryMap[name]) countryMap[name] = { name, flag, count: 0 };
+            countryMap[name].count++;
+        });
+
+        const total = filtered.length;
+        const countries = Object.values(countryMap)
+            .sort((a, b) => b.count - a.count)
+            .map(c => ({ ...c, percentage: total > 0 ? ((c.count / total) * 100).toFixed(1) : '0.0' }));
+
+        res.json({ countries, total });
+    } catch (err) {
+        console.error('Error in analytics countries:', err);
+        res.status(500).json({ error: 'Failed to fetch country stats.' });
     }
 });
 

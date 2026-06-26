@@ -57,9 +57,28 @@
         });
     }
 
+    // Detect current page name from URL path
+    function getPageName() {
+        const path = window.location.pathname.toLowerCase();
+        if (path === '/' || path === '/index.html' || path === '') return 'Home';
+        if (path.includes('about')) return 'About';
+        if (path.includes('contact')) return 'Contact';
+        if (path.includes('blog-post')) return 'Blog Post';
+        if (path.includes('blog')) return 'Blog';
+        if (path.includes('courses')) return 'Courses';
+        if (path.includes('faq')) return 'FAQ';
+        if (path.includes('track')) return 'Booking Tracker';
+        return path.replace(/\//g, '').replace('.html', '') || 'Home';
+    }
+
+    const currentPage = getPageName();
+
     // Initialization
     registerSession();
-    logEvent('pageview', 'view_home', { url: window.location.pathname });
+    logEvent('pageview', `view_${currentPage.toLowerCase().replace(/\s/g,'_')}`, {
+        url: window.location.pathname,
+        page: currentPage
+    });
 
     // Track scroll depth (only once per section)
     const trackedSections = new Set();

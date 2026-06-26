@@ -289,6 +289,26 @@
 
                 <!-- Section 4: Visitor Analytics (Google Analytics Style Dashboard) -->
                 <section id="tab-analytics" class="tab-content">
+
+                    <!-- Date Range Picker Bar -->
+                    <div class="analytics-date-bar">
+                        <div class="date-presets">
+                            <button class="date-preset-btn active" data-preset="today">Today</button>
+                            <button class="date-preset-btn" data-preset="7d">Last 7 Days</button>
+                            <button class="date-preset-btn" data-preset="30d">Last 30 Days</button>
+                            <button class="date-preset-btn" data-preset="month">This Month</button>
+                            <button class="date-preset-btn" data-preset="year">This Year</button>
+                        </div>
+                        <div class="date-custom-range">
+                            <label>From:</label>
+                            <input type="date" id="analyticsStartDate" class="date-input">
+                            <label>To:</label>
+                            <input type="date" id="analyticsEndDate" class="date-input">
+                            <button id="applyDateRange" class="btn-apply-range">Apply</button>
+                        </div>
+                        <div class="analytics-range-label" id="analyticsRangeLabel">Last 30 Days</div>
+                    </div>
+
                     <!-- Top metrics grid (3 columns) -->
                     <div class="ga-metrics-grid">
                         <!-- Card 1: Countries -->
@@ -351,6 +371,38 @@
                                 <span class="ga-card-sub text-muted">VISITORS</span>
                             </div>
                             <div class="ga-card-body" id="gaReferrersList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Pages full-width row -->
+                    <div class="ga-metrics-grid span-2-col" style="margin-top:0;">
+                        <!-- Card 6: Top Pages -->
+                        <div class="ga-card">
+                            <div class="ga-card-header text-split">
+                                <h3>📄 Top Pages</h3>
+                                <div class="ga-card-cols text-muted">
+                                    <span>UNIQUE VISITORS</span>
+                                    <span>TOTAL VIEWS</span>
+                                </div>
+                            </div>
+                            <div class="ga-card-body" id="gaPagesList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+
+                        <!-- Card 7: Visitor Timeline Summary -->
+                        <div class="ga-card">
+                            <div class="ga-card-header">
+                                <h3>📅 Visits by Period</h3>
+                                <div class="ga-groupby-tabs">
+                                    <button class="ga-groupby-btn active" data-group="day">Day</button>
+                                    <button class="ga-groupby-btn" data-group="week">Week</button>
+                                    <button class="ga-groupby-btn" data-group="month">Month</button>
+                                </div>
+                            </div>
+                            <div class="ga-card-body" id="gaTimelineSummaryList">
                                 <!-- Dynamic rows -->
                             </div>
                         </div>
