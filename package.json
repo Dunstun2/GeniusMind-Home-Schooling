@@ -10,6 +10,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "overrides": {
+    "libsignal-node": "https://github.com/whiskeysockets/libsignal-node/archive/refs/heads/master.tar.gz"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
