@@ -1,9 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=$HOME/geniusminds
-    - /bin/mkdir -p $DEPLOYPATH
-    - rsync -rlptD --exclude='.git' --exclude='node_modules' --exclude='.wwebjs_auth' --exclude='.wwebjs_cache' --exclude='database.sqlite' --exclude='uploads' --exclude='scratch' --exclude='*.log' --exclude='.env' --exclude='.env.production' ./ $DEPLOYPATH/
-    - sed -i 's/\r$//' $DEPLOYPATH/.htaccess
-    - /bin/mkdir -p $DEPLOYPATH/tmp
-    - /bin/touch $DEPLOYPATH/tmp/restart.txt
+    - sed -i 's/\r$//' /home/vdranjxy/geniusminds/.htaccess 2>/dev/null || true
+    - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
+    - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
