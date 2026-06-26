@@ -1497,7 +1497,14 @@ async function resolveCountryFromIP(ip) {
             const flag = result.countryCode
                 ? String.fromCodePoint(...[...result.countryCode.toUpperCase()].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)))
                 : '🌍';
-            const geo = { name: result.country || 'Unknown', flag, code, city: result.city || '', region: result.regionName || '' };
+                
+            let locationName = result.country || 'Unknown';
+            // If the visitor is from Kenya, show the County/Region instead of just "Kenya"
+            if (result.countryCode === 'KE' && result.regionName) {
+                locationName = `${result.regionName}, Kenya`;
+            }
+                
+            const geo = { name: locationName, flag, code, city: result.city || '', region: result.regionName || '' };
             geoCache[ip] = geo;
             return geo;
         }
