@@ -1,6 +1,5 @@
 ---
 deployment:
   tasks:
-    - cd /home/vdranjxy/geniusminds && /home/vdranjxy/nodevenv/geniusminds/20/bin/npm ci --omit=dev 2>/dev/null || true
     - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
     - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
