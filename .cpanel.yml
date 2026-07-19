@@ -1,6 +1,8 @@
 ---
 deployment:
   tasks:
+    - /usr/local/cpanel/3rdparty/bin/git -C /home/vdranjxy/geniusminds reset --hard HEAD
+    - /usr/local/cpanel/3rdparty/bin/git -C /home/vdranjxy/geniusminds clean -fd
     - sed -i 's/\r$//' /home/vdranjxy/geniusminds/.htaccess 2>/dev/null || true
     - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
     - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
