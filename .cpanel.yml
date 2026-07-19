@@ -1,7 +1,6 @@
 ---
 deployment:
   tasks:
-    - sed -i 's/\r$//' /home/vdranjxy/geniusminds/.htaccess 2>/dev/null || true
-    - cd /home/vdranjxy/geniusminds && /home/vdranjxy/nodevenv/geniusminds/20/bin/npm install --omit=dev 2>/dev/null || true
+    - cd /home/vdranjxy/geniusminds && /home/vdranjxy/nodevenv/geniusminds/20/bin/npm ci --omit=dev 2>/dev/null || true
     - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
     - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
