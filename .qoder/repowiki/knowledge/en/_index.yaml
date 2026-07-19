@@ -1,0 +1,71 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+nodes_managed: true
+exported_at: "2026-07-16T02:21:21Z"
+modules:
+    "":
+        dir_name: Genius Minds Homeschooling Full-Stack Application
+        title: Genius Minds Homeschooling Full-Stack Application
+        scope:
+            - README.md
+            - .gitignore
+            - .htaccess
+            - .cpanel.yml
+            - package.json
+            - package-lock.json
+            - robots.txt
+            - sitemap.xml
+            - analytics.js
+            - banner-cta-handler.js
+            - .env.example
+            - COMPLETE_OPTIMIZATION_SUMMARY.md
+            - MOBILE_FIX_SUMMARY.md
+            - MOBILE_TESTING_GUIDE.md
+            - OPTIMIZATION_SUMMARY.md
+            - PORTFOLIO_CMS_COMPLETE_BLUEPRINT.md
+            - server.js
+        source_files: []
+        children:
+            - admin_panel
+            - public_website
+            - shared_components
+        depends_on: []
+        related_to: []
+    admin_panel:
+        dir_name: Admin Dashboard SPA (Client-Side)
+        title: Admin Dashboard SPA (Client-Side)
+        scope:
+            - admin/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    public_website:
+        dir_name: Public Marketing Website & Booking Tracker
+        title: Public Marketing Website & Booking Tracker
+        scope:
+            - index.html
+            - about.html
+            - courses.html
+            - blog.html
+            - blog-post.html
+            - contact.html
+            - faq.html
+            - public/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    shared_components:
+        dir_name: Shared UI Components & Global Client-Side Runtime
+        title: Shared UI Components & Global Client-Side Runtime
+        scope:
+            - components/
+            - styles.css
+            - script.js
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

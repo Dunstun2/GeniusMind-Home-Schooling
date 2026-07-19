@@ -1,0 +1,1 @@
+Vanilla HTML5 + CSS3 (CSS custom properties for dark/light themes) + uncompiled ES6 JavaScript; Chart.js for dashboard charts; Google Fonts (Outfit, Inter); flagcdn.com for country flags. No framework or bundler.

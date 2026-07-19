@@ -1,0 +1,1 @@
+`npm start` runs `node server.js`; `npm run dev` uses Node's built-in `--watch-path` to hot-reload `server.js` and `utils/` during development. Production targets cPanel via `.cpanel.yml` and requires MySQL; development falls back to SQLite (`database.sqlite`) or in-memory storage when drivers are missing.

@@ -1,0 +1,5 @@
+- Every user-supplied value rendered into the DOM is passed through the module-local `escapeHTML()` helper before insertion, preventing XSS when populating cards from `/api/*` responses.
+- Dynamic sections follow a uniform pattern: set a loading placeholder string into the container, `try { const res = await fetch('/api/...'); ... } catch(e) { container.innerHTML = error message }` with a friendly fallback.
+- Theme state is persisted by toggling `data-theme` on `<html>` and reading/writing `localStorage('theme')`, with CSS rules keyed off `[data-theme="dark"]` rather than JS class toggles.
+- Component placeholders use stable IDs (`#navbar-placeholder`, `#footer-placeholder`, `#year`, `#footer-social-links`, `#contact-social-links`) and are replaced via `outerHTML` / `innerHTML` after `fetch` resolves, keeping markup decoupled from logic.
+- Social platform rendering maps provider names to a `platformMap` of icon SVG + brand CSS class, falling back to a generic icon when a new platform is added.

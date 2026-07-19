@@ -1,0 +1,1 @@
+Vanilla ES6+ JavaScript with `fetch`/`async-await`, CSS custom properties for theming, inline SVG icons, and no build toolchain — components are loaded as raw HTML fragments over HTTP.

@@ -1,0 +1,5 @@
+- Each dashboard feature is a `<section id="tab-<name>">` paired with a sidebar `<a data-tab="<name>">`; clicking the link toggles `.active` on both the nav item and section and invokes a dedicated `load<Feature>()` function.
+- Data-fetching functions follow a uniform pattern: `fetch('/api/admin/<resource>')`, check `response.status === 401` to re-route to `login.html`, then parse JSON and call a `render<Xxx>Table()` / `render<Xxx>Widgets()` DOM updater.
+- Forms submit via `e.preventDefault()` + `fetch(..., { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...}) })`, disable the submit button while loading, and restore it in a `finally` block.
+- Modal dialogs are `<div class="modal">` overlays whose visibility is controlled by adding/removing an `active` class, closed by a close button or clicking the backdrop (`window.addEventListener('click', e => ...)`) rather than by destroying/recreating DOM.
+- Theme preference is persisted in `localStorage` under the key `adminTheme` and applied at startup by toggling a `light-mode` class on `<body>`.

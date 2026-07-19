@@ -1,16 +1,60 @@
 // Utility helper to escape HTML and prevent XSS
 function escapeHTML(str) {
     if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
+    return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
+
+// Mobile Menu Handler - Set up once at document level (OUTSIDE DOMContentLoaded)
+let mobileMenuHandlerAttached = false;
+function setupMobileMenuHandler() {
+    if (mobileMenuHandlerAttached) return; // Prevent duplicate handlers
+
+    document.addEventListener('click', function (e) {
+        // Debug: Log all clicks
+        console.log('Click detected on:', e.target);
+
+        const mobileMenuBtn = e.target.closest('.mobile-menu-btn');
+        if (mobileMenuBtn) {
+            console.log('Mobile menu button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks) {
+                mobileMenuBtn.classList.toggle('active');
+                navLinks.classList.toggle('active');
+                console.log('Menu toggled. Active:', navLinks.classList.contains('active'));
+            } else {
+                console.log('Nav links not found!');
+            }
+            return;
+        }
+
+        // Close mobile menu when clicking nav links
+        const navLink = e.target.closest('.nav-links a');
+        if (navLink) {
+            console.log('Nav link clicked, closing menu');
+            const navLinks = document.querySelector('.nav-links');
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            if (navLinks) navLinks.classList.remove('active');
+            if (mobileMenuBtn) mobileMenuBtn.classList.remove('active');
+        }
+    }, true); // Use capture phase
+
+    mobileMenuHandlerAttached = true;
+    console.log('Mobile menu handler attached');
+}
+
+// Set up mobile menu handler immediately (before DOM is ready)
+setupMobileMenuHandler();
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Load Navbar and Footer Components first
     await loadComponents();
 
-    // 2. Initialize Shared UI listeners (Theme, Mobile Menu, Year, etc.)
+    // 2. Initialize Shared UI listeners (Theme, Navbar scroll, Year, etc.)
     initializeGlobalUI();
 
     // 3. Page-Specific CMS Content Loader
@@ -21,19 +65,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (bookingForm) {
         bookingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const btn = bookingForm.querySelector('button[type="submit"]');
             const originalText = btn.textContent;
-            
+
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
             const service = document.getElementById('service').value;
             const message = document.getElementById('message').value;
-            
+
             btn.textContent = 'Sending...';
             btn.disabled = true;
-            
+
             try {
                 const response = await fetch('/api/bookings', {
                     method: 'POST',
@@ -42,15 +86,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     },
                     body: JSON.stringify({ name, email, phone, service, message })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.success) {
                     // Log success event to analytics
                     if (window.GM_Analytics) {
                         window.GM_Analytics.logEvent('form_submit', 'submit_booking_success', { service });
                     }
-                    
+
                     alert('Thank you! Your booking request has been received. We will contact you shortly.');
                     bookingForm.reset();
                 } else {
@@ -73,24 +117,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('click', (e) => {
         const anchor = e.target.closest('a[href^="#"]');
         if (!anchor) return;
-        
+
         const targetId = anchor.getAttribute('href');
         if (targetId === '#') return;
-        
+
         const targetElement = document.querySelector(targetId);
         if (targetElement) {
             e.preventDefault();
             const navHeight = document.querySelector('.navbar').offsetHeight || 70;
             const targetPosition = targetElement.getBoundingClientRect().top + window.scrollY - navHeight;
-            
+
             window.scrollTo({
                 top: targetPosition,
                 behavior: 'smooth'
             });
-            
+
             // Close mobile menu links
             const navLinks = document.querySelector('.nav-links');
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
             if (navLinks) navLinks.classList.remove('active');
+            if (mobileMenuBtn) mobileMenuBtn.classList.remove('active');
         }
     });
 
@@ -127,10 +173,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Theme Toggle
         const themeToggle = document.getElementById('theme-toggle');
         const htmlElement = document.documentElement;
-        
+
         const savedTheme = localStorage.getItem('theme');
         const osPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         if (savedTheme === 'dark' || (!savedTheme && osPrefersDark)) {
             htmlElement.setAttribute('data-theme', 'dark');
         }
@@ -147,23 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Mobile Menu Toggle
-        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-        const navLinks = document.querySelector('.nav-links');
-
-        if (mobileMenuBtn && navLinks) {
-            mobileMenuBtn.addEventListener('click', () => {
-                navLinks.classList.toggle('active');
-            });
-        }
-
-        // Close mobile menu when nav link is clicked
-        const links = document.querySelectorAll('.nav-links a');
-        links.forEach(link => {
-            link.addEventListener('click', () => {
-                if (navLinks) navLinks.classList.remove('active');
-            });
-        });
+        // Mobile menu handler is already set up globally - don't add it here
 
         // Navbar scroll effect
         const navbar = document.querySelector('.navbar');
@@ -185,6 +215,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Fetch contacts site settings
         fetchSiteSettings();
+
+        // Fetch and render social media links
+        fetchSocialMedia();
 
         // Highlight the active page nav link
         highlightActiveNavLink();
@@ -229,18 +262,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ABOUT PAGE DATA LOADER
     async function loadAboutPageData() {
         const teamGrid = document.getElementById('team-grid');
-        
+
         // Load page content (mission, vision, history, philosophy)
         try {
             const res = await fetch('/api/content');
             if (res.ok) {
                 const content = await res.json();
-                
+
                 const missionEl = document.getElementById('mission-text');
                 const visionEl = document.getElementById('vision-text');
                 const historyEl = document.getElementById('history-text');
                 const philosophyEl = document.getElementById('philosophy-text');
-                
+
                 if (missionEl && content.mission_statement) missionEl.textContent = content.mission_statement;
                 if (visionEl && content.vision) visionEl.textContent = content.vision;
                 if (historyEl && content.history) historyEl.innerHTML = content.history.replace(/\n/g, '<br>');
@@ -267,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         card.className = 'about-card glass-card';
                         card.style.textAlign = 'center';
                         card.style.padding = '30px';
-                        
+
                         const img = member.image_url || '/assets/images/placeholder-avatar.png';
                         card.innerHTML = `
                             <div class="team-avatar-wrapper" style="width: 110px; height: 110px; margin: 0 auto 20px auto; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary-color); box-shadow: 0 8px 30px rgba(0,0,0,0.15);">
@@ -304,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 courses.forEach(course => {
                     const card = document.createElement('div');
                     card.className = 'service-card glass-card';
-                    
+
                     // Build outcomes html list
                     let outcomesList = '';
                     if (course.outcomes) {
@@ -389,9 +422,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const faqItem = question.parentElement;
                         const answer = question.nextElementSibling;
                         const toggleIcon = question.querySelector('.faq-toggle-icon');
-                        
+
                         const isActive = faqItem.classList.contains('active');
-                        
+
                         faqAccordion.querySelectorAll('.faq-item').forEach(item => {
                             item.classList.remove('active');
                             const itemAnswer = item.querySelector('.faq-answer');
@@ -399,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const itemIcon = item.querySelector('.faq-toggle-icon');
                             if (itemIcon) itemIcon.textContent = '+';
                         });
-                        
+
                         if (!isActive) {
                             faqItem.classList.add('active');
                             answer.style.maxHeight = answer.scrollHeight + 'px';
@@ -434,10 +467,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     card.style.display = 'flex';
                     card.style.flexDirection = 'column';
                     card.style.overflow = 'hidden';
-                    
+
                     const img = post.image_url || '/assets/images/blog-placeholder.png';
                     const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-                    
+
                     card.innerHTML = `
                         <div style="height: 180px; overflow:hidden; position:relative; border-bottom:1px solid rgba(255,255,255,0.06);">
                             <img src="${img}" alt="${escapeHTML(post.title)}" style="width:100%; height:100%; object-fit:cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
@@ -490,10 +523,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const post = await res.json();
                 const img = post.image_url || '/assets/images/blog-placeholder.png';
                 const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-                
+
                 // Set page title metadata
                 document.title = `${post.title} | Genius Minds Blog`;
-                
+
                 container.innerHTML = `
                     <div class="glass-card" style="max-width: 900px; margin: 0 auto; border-radius:24px; overflow:hidden;">
                         <div style="height: 350px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.06); position:relative;">
@@ -558,6 +591,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.fetchSiteSettings = fetchSiteSettings;
 
+    // ==========================================
+    // SOCIAL MEDIA LINKS (Dynamic from API)
+    // ==========================================
+    async function fetchSocialMedia() {
+        try {
+            const response = await fetch('/api/social-media');
+            if (!response.ok) return;
+            const links = await response.json();
+
+            // Map platform names to premium SVG icons and brand colors
+            const platformMap = {
+                tiktok: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>`, brandClass: 'brand-tiktok' },
+                instagram: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>`, brandClass: 'brand-instagram' },
+                x: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`, brandClass: 'brand-x' },
+                twitter: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`, brandClass: 'brand-x' },
+                facebook: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02Z"/></svg>`, brandClass: 'brand-facebook' },
+                linkedin: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`, brandClass: 'brand-linkedin' },
+                youtube: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg>`, brandClass: 'brand-youtube' },
+                whatsapp: { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`, brandClass: 'brand-whatsapp' }
+            };
+
+            // Render to footer
+            const footerContainer = document.getElementById('footer-social-links');
+            if (footerContainer && links.length > 0) {
+                footerContainer.innerHTML = links.map(link => {
+                    const nameLower = link.name.toLowerCase();
+                    const platform = platformMap[nameLower] || { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 13.41c.41.39.41 1.03 0 1.42-.39.39-1.03.39-1.42 0a5.003 5.003 0 0 1 0-7.07l3.54-3.54a5.003 5.003 0 0 1 7.07 0 5.003 5.003 0 0 1 0 7.07l-1.49 1.49c.01-.82-.12-1.64-.4-2.42l.47-.48a2.982 2.982 0 0 0 0-4.24 2.982 2.982 0 0 0-4.24 0l-3.53 3.53a2.982 2.982 0 0 0 0 4.24zm2.82-4.24c.39-.39 1.03-.39 1.42 0a5.003 5.003 0 0 1 0 7.07l-3.54 3.54a5.003 5.003 0 0 1-7.07 0 5.003 5.003 0 0 1 0-7.07l1.49-1.49c-.01.82.12 1.64.4 2.43l-.47.47a2.982 2.982 0 0 0 0 4.24 2.982 2.982 0 0 0 4.24 0l3.53-3.53a2.982 2.982 0 0 0 0-4.24.973.973 0 0 1 0-1.42z"/></svg>`, brandClass: 'brand-default' };
+
+                    return `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="footer-social-item ${platform.brandClass}" aria-label="${link.name}" title="${link.name}">
+                        ${platform.icon}
+                    </a>`;
+                }).join('');
+            }
+
+            // Render to contact page
+            const contactContainer = document.getElementById('contact-social-links');
+            if (contactContainer && links.length > 0) {
+                contactContainer.innerHTML = links.map(link => {
+                    const nameLower = link.name.toLowerCase();
+                    const platform = platformMap[nameLower] || { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 13.41c.41.39.41 1.03 0 1.42-.39.39-1.03.39-1.42 0a5.003 5.003 0 0 1 0-7.07l3.54-3.54a5.003 5.003 0 0 1 7.07 0 5.003 5.003 0 0 1 0 7.07l-1.49 1.49c.01-.82-.12-1.64-.4-2.42l.47-.48a2.982 2.982 0 0 0 0-4.24 2.982 2.982 0 0 0-4.24 0l-3.53 3.53a2.982 2.982 0 0 0 0 4.24zm2.82-4.24c.39-.39 1.03-.39 1.42 0a5.003 5.003 0 0 1 0 7.07l-3.54 3.54a5.003 5.003 0 0 1-7.07 0 5.003 5.003 0 0 1 0-7.07l1.49-1.49c-.01.82.12 1.64.4 2.43l-.47.47a2.982 2.982 0 0 0 0 4.24 2.982 2.982 0 0 0 4.24 0l3.53-3.53a2.982 2.982 0 0 0 0-4.24.973.973 0 0 1 0-1.42z"/></svg>`, brandClass: 'brand-default' };
+
+                    return `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="contact-social-item ${platform.brandClass}" aria-label="${link.name}" title="${link.name}">
+                        ${platform.icon}
+                    </a>`;
+                }).join('');
+            }
+        } catch (err) {
+            // Silently fail
+        }
+    }
+
 
     // ==========================================================================
     // Achievements & Events Highlights Slider Controllers (Dynamic API-driven)
@@ -572,23 +656,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sliderDotsContainer = highlightsSlider.querySelector('.slider-dots');
         const prevBtn = highlightsSlider.querySelector('.prev-btn');
         const nextBtn = highlightsSlider.querySelector('.next-btn');
-        
+
         let slides = [];
         let dots = [];
         let currentSlide = 0;
         let slideInterval;
         const SLIDE_DURATION = 12000; // 12 seconds per slide
-        
+
         try {
             const response = await fetch('/api/banners');
             if (!response.ok) throw new Error('Failed to fetch banners');
             const banners = await response.json();
-            
+
             if (banners && banners.length > 0) {
                 // Clear existing static HTML slides and dots
                 sliderContainer.innerHTML = '';
                 sliderDotsContainer.innerHTML = '';
-                
+
                 // Build new slides and dots
                 banners.forEach((banner, idx) => {
                     // Determine shape colors based on glow_class
@@ -601,20 +685,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         shape1Bg = 'var(--secondary-light)';
                         shape2Bg = 'var(--primary-light)';
                     }
-                    
+
                     // Build slide HTML
                     const slideDiv = document.createElement('div');
                     slideDiv.className = `slide ${idx === 0 ? 'active' : ''}`;
                     slideDiv.setAttribute('data-slide-index', idx);
-                    
+
                     let buttonsHtml = '';
-                    if (banner.btn_primary_text) {
-                        buttonsHtml += `<a href="${banner.btn_primary_link || '#'}" class="btn btn-primary btn-lg">${banner.btn_primary_text}</a>`;
+                    if (banner.btn_primary_action) {
+                        const primaryText = window.BannerCTA ? window.BannerCTA.getCtaText(banner.btn_primary_action) : 'Learn More';
+                        const primaryStyle = banner.btn_primary_style || 'primary';
+                        buttonsHtml += `<button data-cta-action="${banner.btn_primary_action}" class="btn btn-${primaryStyle} btn-lg">${primaryText}</button>`;
                     }
-                    if (banner.btn_secondary_text) {
-                        buttonsHtml += `<a href="${banner.btn_secondary_link || '#'}" class="btn btn-outline btn-lg">${banner.btn_secondary_text}</a>`;
+                    if (banner.btn_secondary_action) {
+                        const secondaryText = window.BannerCTA ? window.BannerCTA.getCtaText(banner.btn_secondary_action) : 'Contact Us';
+                        const secondaryStyle = banner.btn_secondary_style || 'outline';
+                        buttonsHtml += `<button data-cta-action="${banner.btn_secondary_action}" class="btn btn-${secondaryStyle} btn-lg">${secondaryText}</button>`;
                     }
-                    
+
                     let statsHtml = '';
                     if (banner.stat_1_number && banner.stat_1_label) {
                         statsHtml += `
@@ -640,7 +728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         `;
                     }
-                    
+
                     let floatingHtml = '';
                     if (banner.floating_icon) {
                         floatingHtml += `
@@ -653,7 +741,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         `;
                     }
-                    
+
                     slideDiv.innerHTML = `
                         <div class="hero-bg-shapes">
                             <div class="shape shape-1" style="background: ${shape1Bg};"></div>
@@ -679,84 +767,121 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         </div>
                     `;
-                    
+
                     sliderContainer.appendChild(slideDiv);
-                    
+
                     // Build dot HTML
                     const dotSpan = document.createElement('span');
                     dotSpan.className = `dot ${idx === 0 ? 'active' : ''}`;
                     dotSpan.setAttribute('data-slide', idx);
                     sliderDotsContainer.appendChild(dotSpan);
                 });
+
+                // Initialize CTA buttons after banners are loaded
+                if (window.BannerCTA) {
+                    window.BannerCTA.initializeBannerCtas();
+                }
             }
         } catch (err) {
             console.warn('⚠️ Dynamic banner loading failed. Using fallback static slides.', err);
         }
-        
+
         // Query elements after dynamic rendering (or keep existing static elements)
         slides = highlightsSlider.querySelectorAll('.slide');
         dots = highlightsSlider.querySelectorAll('.dot');
-        
+
+        function updateSliderHeight() {
+            if (slides.length === 0 || !slides[currentSlide]) return;
+            const activeSlide = slides[currentSlide];
+            const container = activeSlide.querySelector('.hero-container');
+            if (container) {
+                const contentHeight = container.offsetHeight;
+                const computedStyle = window.getComputedStyle(activeSlide);
+                const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+                const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+                const totalHeight = contentHeight + paddingTop + paddingBottom;
+                highlightsSlider.style.height = `${totalHeight}px`;
+            } else {
+                highlightsSlider.style.height = `${activeSlide.offsetHeight}px`;
+            }
+        }
+
         function showSlide(index) {
             if (slides.length === 0) return;
             if (index >= slides.length) currentSlide = 0;
             else if (index < 0) currentSlide = slides.length - 1;
             else currentSlide = index;
-            
+
             // Physically translate the slider track horizontally
             if (sliderContainer) {
                 sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
             }
-            
+
             slides.forEach(slide => slide.classList.remove('active'));
             dots.forEach(dot => dot.classList.remove('active'));
-            
+
             if (slides[currentSlide]) {
                 slides[currentSlide].classList.add('active');
             }
             if (dots[currentSlide]) {
                 dots[currentSlide].classList.add('active');
             }
-            
+
+            // Adjust height dynamically to fit current slide
+            setTimeout(updateSliderHeight, 50);
+
             // Log slide change to analytics
             if (window.GM_Analytics) {
                 window.GM_Analytics.logEvent('slider_interaction', `view_slide_${currentSlide}`);
             }
         }
-        
+
+        // Handle image loading to size slider correctly when images finish downloading
+        highlightsSlider.querySelectorAll('.hero-img').forEach(img => {
+            img.addEventListener('load', () => {
+                const slide = img.closest('.slide');
+                if (slide && slide.classList.contains('active')) {
+                    updateSliderHeight();
+                }
+            });
+        });
+
+        // Update slider height on window resize
+        window.addEventListener('resize', updateSliderHeight);
+
         function nextSlide() {
             showSlide(currentSlide + 1);
         }
-        
+
         function prevSlide() {
             showSlide(currentSlide - 1);
         }
-        
+
         function startAutoPlay() {
             stopAutoPlay();
             if (slides.length > 0) {
                 slideInterval = setInterval(nextSlide, SLIDE_DURATION);
             }
         }
-        
+
         function stopAutoPlay() {
             if (slideInterval) clearInterval(slideInterval);
         }
-        
+
         if (nextBtn) {
             nextBtn.addEventListener('click', () => {
                 nextSlide();
                 startAutoPlay();
             });
         }
-        
+
         if (prevBtn) {
             prevBtn.addEventListener('click', () => {
                 prevSlide();
                 startAutoPlay();
             });
         }
-        
+
         // Delegation for dots since they might be dynamically rendered
         if (sliderDotsContainer) {
             sliderDotsContainer.addEventListener('click', (e) => {
@@ -767,11 +892,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        
+
         highlightsSlider.addEventListener('mouseenter', stopAutoPlay);
         highlightsSlider.addEventListener('mouseleave', startAutoPlay);
-        
+
+        // Touch swipe support for mobile devices
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        highlightsSlider.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            stopAutoPlay();
+        }, { passive: true });
+
+        highlightsSlider.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) > 50) {
+                if (diff < 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
+            startAutoPlay();
+        }, { passive: true });
+
         if (slides.length > 0) {
+            showSlide(0); // Set initial active slide height immediately
             startAutoPlay();
         }
     }
@@ -783,9 +931,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const faqItem = question.parentElement;
             const answer = question.nextElementSibling;
             const toggleIcon = question.querySelector('.faq-toggle-icon');
-            
+
             const isActive = faqItem.classList.contains('active');
-            
+
             // Close other items for a clean single-open accordion feel
             document.querySelectorAll('.faq-item').forEach(item => {
                 item.classList.remove('active');
@@ -794,7 +942,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const itemIcon = item.querySelector('.faq-toggle-icon');
                 if (itemIcon) itemIcon.textContent = '+';
             });
-            
+
             if (!isActive) {
                 faqItem.classList.add('active');
                 answer.style.maxHeight = answer.scrollHeight + 'px';

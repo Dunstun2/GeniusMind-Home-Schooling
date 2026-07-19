@@ -21,8 +21,20 @@
     const SESSION_ENDPOINT = '/api/analytics/session';
     const EVENT_ENDPOINT = '/api/analytics/event';
 
+    // Check if we're in production or local development
+    const isProduction = window.location.hostname !== 'localhost' && 
+                        window.location.hostname !== '127.0.0.1' &&
+                        !window.location.hostname.includes('192.168');
+
     // Queue/Send helper
     async function sendAnalytics(url, data) {
+        // Skip analytics in local development to avoid console errors
+        if (!isProduction) {
+            // Uncomment below line if you want to see what would be tracked
+            // console.log('[Analytics - Dev Mode]', url, data);
+            return;
+        }
+
         try {
             await fetch(url, {
                 method: 'POST',
@@ -34,7 +46,10 @@
             });
         } catch (err) {
             // Silently swallow analytics errors to avoid breaking the main UI
-            console.warn('Analytics transmission failure:', err);
+            // Only log in development for debugging
+            if (!isProduction) {
+                console.warn('Analytics transmission failure:', err);
+            }
         }
     }
 

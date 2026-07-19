@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h2>Button Layout Test</h2>
+        <p>Desktop (≥769px): Should be side-by-side</p>
+        <p>Mobile (<769px): Should stack vertically</p>
+        
+        <div class="hero-buttons">
+            <a href="#" class="btn btn-primary btn-lg">Book a Session</a>
+            <a href="#" class="btn btn-outline btn-lg">View Our Courses</a>
+        </div>
+        
+        <hr style="margin: 40px 0;">
+        
+        <h3>Current Screen Width:</h3>
+        <p id="width"></p>
+        
+        <h3>Instructions:</h3>
+        <ol>
+            <li>If screen is ≥769px wide: Buttons should be <strong>side-by-side</strong></li>
+            <li>If screen is <769px wide: Buttons should <strong>stack vertically</strong></li>
+            <li>Try resizing browser window to test</li>
+        </ol>
+    </div>
+    
+    <script>
+        function updateWidth() {
+            document.getElementById('width').textContent = window.innerWidth + 'px';
+        }
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+    </script>
+</body>
+</html>

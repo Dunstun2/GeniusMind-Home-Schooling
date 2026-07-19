@@ -118,6 +118,14 @@
             display: none;
         }
         .no-results.visible { display: block; }
+
+        @media (max-width: 768px) {
+            .faq-search-wrap { padding: 0 1rem; }
+            .cta-strip { padding: 3.5rem 0; }
+            .cta-strip h2 { font-size: 1.75rem; }
+            .faq-question { font-size: 1rem; padding: 1.25rem; }
+            .faq-answer p { padding: 0 1.25rem 1.25rem 1.25rem; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
@@ -125,22 +133,8 @@
         <div id="navbar-placeholder"></div>
     </nav>
 
-    <!-- Inner Hero -->
-    <section class="inner-hero">
-        <div class="container">
-            <div class="breadcrumb">
-                <a href="index.html">Home</a>
-                <span>›</span>
-                <span>FAQ</span>
-            </div>
-            <div class="badge">Common Questions</div>
-            <h1>Frequently Asked <span>Questions</span></h1>
-            <p>Find answers to the most common questions parents ask about our homeschooling programmes, tutors, fees, and scheduling.</p>
-        </div>
-    </section>
-
     <!-- FAQ Section -->
-    <section class="faq-page-section">
+    <section class="faq-page-section" style="padding-top: 8rem;">
         <div class="container">
 
             <!-- Search -->

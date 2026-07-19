@@ -1,0 +1,4 @@
+- Database access goes through the central `db.query(sql, params)` adapter rather than direct pool/connection calls, keeping SQL dialect differences hidden behind a single interface.
+- Route handlers follow a consistent shape: parse request body → call `db.query` → send JSON response, with errors caught by the top-level error logger that appends to `app-errors.log`.
+- Admin-only endpoints are gated by checking `req.session.isAdmin` set by the `/admin/login` POST handler instead of per-route middleware.
+- Seed data (default admin user, highlights banners, site settings, social links) is inserted lazily on first boot only when the corresponding table is empty.

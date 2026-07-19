@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Menu Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Test overlay to visualize menu state */
+        body {
+            padding-top: 80px;
+        }
+        .test-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 99999;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-info div {
+            margin: 5px 0;
+        }
+        /* Highlight the nav-links when active */
+        .nav-links.active {
+            outline: 3px solid red !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Test Navbar -->
+    <nav class="navbar scrolled">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/images/logo-transparent.png" alt="Test Logo" class="logo-img-full">
+            </a>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle">🌙</button>
+                <a href="#" class="btn btn-primary">Book Now</a>
+                <div class="mobile-menu-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Test Content -->
+    <div class="container" style="padding: 40px 20px;">
+        <h1>Mobile Menu Test Page</h1>
+        <p>Resize your browser to mobile width (below 768px) to see the hamburger menu.</p>
+        <p>Click the hamburger icon (three lines) to test the mobile menu.</p>
+        
+        <h2>What to check:</h2>
+        <ul>
+            <li>On mobile, the hamburger menu should appear</li>
+            <li>Clicking it should show/hide the menu</li>
+            <li>The menu should slide down smoothly</li>
+            <li>When open, it should show a red outline (for testing)</li>
+        </ul>
+
+        <h2>Current Issue:</h2>
+        <p>The JavaScript is working (console shows toggle), but the menu might not be visible.</p>
+        
+        <h2>Debug Info:</h2>
+        <p>Open Developer Tools (F12) → Console to see click events</p>
+    </div>
+
+    <!-- Test Info Display -->
+    <div class="test-info">
+        <div><strong>Mobile Menu Debug</strong></div>
+        <div>Menu Active: <span id="menu-status">false</span></div>
+        <div>Button Active: <span id="btn-status">false</span></div>
+        <div>Menu Display: <span id="menu-display">-</span></div>
+        <div>Menu Opacity: <span id="menu-opacity">-</span></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Additional debug script
+        function updateDebugInfo() {
+            const navLinks = document.querySelector('.nav-links');
+            const btn = document.querySelector('.mobile-menu-btn');
+            
+            if (navLinks) {
+                document.getElementById('menu-status').textContent = navLinks.classList.contains('active');
+                document.getElementById('menu-display').textContent = window.getComputedStyle(navLinks).display;
+                document.getElementById('menu-opacity').textContent = window.getComputedStyle(navLinks).opacity;
+            }
+            
+            if (btn) {
+                document.getElementById('btn-status').textContent = btn.classList.contains('active');
+            }
+        }
+
+        // Update debug info on click
+        document.addEventListener('click', () => {
+            setTimeout(updateDebugInfo, 100);
+        });
+
+        // Initial update
+        setTimeout(updateDebugInfo, 500);
+    </script>
+</body>
+</html>

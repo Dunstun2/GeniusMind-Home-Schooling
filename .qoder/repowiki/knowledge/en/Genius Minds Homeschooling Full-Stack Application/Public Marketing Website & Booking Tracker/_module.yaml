@@ -1,0 +1,15 @@
+schema_version: 1
+module_path: public_website
+title: Public Marketing Website & Booking Tracker
+scope:
+    - index.html
+    - about.html
+    - courses.html
+    - blog.html
+    - blog-post.html
+    - contact.html
+    - faq.html
+    - public/
+source_files: []
+depends_on: []
+related_to: []

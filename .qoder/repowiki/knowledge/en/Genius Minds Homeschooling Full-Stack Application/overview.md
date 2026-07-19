@@ -1,0 +1,1 @@
+Single-process Express application that serves the public marketing site, admin SPA, and shared UI runtime while persisting bookings, CMS content, analytics, and email logs to MySQL/SQLite.

@@ -1,0 +1,1 @@
+Reusable navbar/footer HTML fragments plus the global JavaScript/CSS that dynamically injects them, drives theme switching, mobile menus, and fetches CMS content for every page.

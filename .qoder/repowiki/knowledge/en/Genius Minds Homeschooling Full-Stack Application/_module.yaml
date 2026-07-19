@@ -1,0 +1,24 @@
+schema_version: 1
+module_path: ""
+title: Genius Minds Homeschooling Full-Stack Application
+scope:
+    - README.md
+    - .gitignore
+    - .htaccess
+    - .cpanel.yml
+    - package.json
+    - package-lock.json
+    - robots.txt
+    - sitemap.xml
+    - analytics.js
+    - banner-cta-handler.js
+    - .env.example
+    - COMPLETE_OPTIMIZATION_SUMMARY.md
+    - MOBILE_FIX_SUMMARY.md
+    - MOBILE_TESTING_GUIDE.md
+    - OPTIMIZATION_SUMMARY.md
+    - PORTFOLIO_CMS_COMPLETE_BLUEPRINT.md
+    - server.js
+source_files: []
+depends_on: []
+related_to: []

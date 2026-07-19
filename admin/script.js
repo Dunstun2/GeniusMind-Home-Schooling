@@ -1,5 +1,31 @@
 // Admin Dashboard Client Logic
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.querySelector('.theme-icon');
+
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('adminTheme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    }
+
+    // Theme toggle click handler
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+
+            if (themeIcon) {
+                themeIcon.textContent = isLight ? '☀️' : '🌙';
+            }
+
+            // Save preference
+            localStorage.setItem('adminTheme', isLight ? 'light' : 'dark');
+        });
+    }
+
     // Check authentication
     checkAuthentication();
 
@@ -8,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
     const pageTitle = document.getElementById('pageTitle');
     const logoutBtn = document.getElementById('logoutBtn');
-    
+
     // State Store
     let bookings = [];
     let charts = {};
-    
+
     // GA-like Analytics State Store
     let gaBreakdowns = {};
     let gaTimeline = {};
@@ -20,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let gaEvents = [];
     let gaTopPages = [];
     let activeGATab = 'devices'; // 'devices' or 'browsers'
-    
+
     // Analytics Date Range State
     let analyticsStart = new Date(); analyticsStart.setDate(analyticsStart.getDate() - 30);
     let analyticsEnd = new Date();
@@ -47,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Collapsible Menu Toggle Logic
     const systemConfigToggle = document.getElementById('systemConfigToggle');
     const systemConfigMenu = document.getElementById('systemConfigMenu');
-    
+
     if (systemConfigToggle && systemConfigMenu) {
         systemConfigToggle.addEventListener('click', () => {
             systemConfigToggle.classList.toggle('open');
@@ -60,16 +86,16 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const tabId = item.getAttribute('data-tab');
-            
+
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
-            
+
             tabContents.forEach(tab => tab.classList.remove('active'));
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            
+
             // Set Header Title
             pageTitle.textContent = item.textContent.replace(/[^\w\s]/gi, '').trim();
-            
+
             // Trigger section-specific loads
             if (tabId === 'dashboard') {
                 loadDashboardStats();
@@ -95,8 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadFaqs();
             } else if (tabId === 'blog') {
                 loadBlogPosts();
+            } else if (tabId === 'social') {
+                loadSocialMedia();
             }
-            
+
             // Auto-close sidebar on mobile
             if (window.innerWidth <= 992) {
                 closeSidebar();
@@ -140,10 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = document.getElementById('newUsername').value;
             const password = document.getElementById('newPassword').value;
             const submitBtn = createAdminForm.querySelector('.btn-submit-account');
-            
+
             submitBtn.textContent = 'Registering Account...';
             submitBtn.disabled = true;
-            
+
             try {
                 const response = await fetch('/api/admin/users', {
                     method: 'POST',
@@ -152,9 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({ username, password })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.success) {
                     alert('Success: Administrator account registered successfully.');
                     createAdminForm.reset();
@@ -193,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Devices & Browsers Tab Switchers inside GA Card
     const gaTabDevicesBtn = document.getElementById('gaTabDevicesBtn');
     const gaTabBrowsersBtn = document.getElementById('gaTabBrowsersBtn');
-    
+
     if (gaTabDevicesBtn && gaTabBrowsersBtn) {
         gaTabDevicesBtn.addEventListener('click', () => {
             gaTabDevicesBtn.classList.add('active');
@@ -201,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeGATab = 'devices';
             renderGATabs();
         });
-        
+
         gaTabBrowsersBtn.addEventListener('click', () => {
             gaTabBrowsersBtn.classList.add('active');
             gaTabDevicesBtn.classList.remove('active');
@@ -229,14 +257,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 presetBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                
+
                 const preset = btn.getAttribute('data-preset');
                 const end = new Date();
                 let start = new Date();
                 let label = btn.textContent;
-                
+
                 if (preset === 'today') {
-                    start.setHours(0,0,0,0);
+                    start.setHours(0, 0, 0, 0);
                 } else if (preset === '7d') {
                     start.setDate(end.getDate() - 7);
                 } else if (preset === '30d') {
@@ -246,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (preset === 'year') {
                     start = new Date(end.getFullYear(), 0, 1);
                 }
-                
+
                 updateDateInputs(start, end);
                 analyticsRangeLabel.textContent = label;
                 loadAnalytics();
@@ -264,12 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
+
         // Initialize with default 30d
         const initEnd = new Date();
         const initStart = new Date(); initStart.setDate(initEnd.getDate() - 30);
         updateDateInputs(initStart, initEnd);
-        
+
         // Group By Tabs for Timeline
         const groupBtns = document.querySelectorAll('.ga-groupby-btn');
         groupBtns.forEach(btn => {
@@ -304,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 document.getElementById('adminUsername').textContent = data.username || 'admin';
                 document.getElementById('userAvatar').textContent = (data.username || 'A').charAt(0).toUpperCase();
-                
+
                 // Fetch initial default tab data
                 loadDashboardStats();
                 loadWhatsAppStatus();
@@ -319,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/admin/stats');
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             const data = await response.json();
-            
+
             // Inject Stats
             document.getElementById('statBookings').textContent = data.stats.totalBookings;
             document.getElementById('statSessions').textContent = data.stats.totalSessions;
@@ -329,13 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('statConversion').textContent = data.stats.conversionRate;
             document.getElementById('statDuration').textContent = data.stats.avgDuration;
             document.getElementById('statBounce').textContent = data.stats.bounceRate;
-            
+
             // Realtime Counter
             document.getElementById('activeUsers').textContent = data.stats.activeUsers;
 
             // Render Charts
             renderCharts(data.breakdowns, data.timeline);
-            
+
             // Log details on db engine status
             if (!isAutoRefresh) {
                 checkDatabaseConnection(data.dbMode);
@@ -361,11 +389,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const qrContainer = document.getElementById('waQrContainer');
                 const qrImage = document.getElementById('waQrImage');
                 const disconnectBtn = document.getElementById('waDisconnectBtn');
-                
+
                 if (!statusText) return; // Not on dashboard
-                
+
                 let shouldPollFast = false;
-                
+
                 if (data.status === 'ready') {
                     statusText.textContent = 'Connected ✅';
                     statusText.style.color = '#25D366';
@@ -417,10 +445,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target && e.target.id === 'waDisconnectBtn') {
             const waDisconnectBtn = e.target;
             if (!confirm('Are you sure you want to disconnect WhatsApp integration? You will need to scan the QR code again to reconnect.')) return;
-            
+
             waDisconnectBtn.disabled = true;
             waDisconnectBtn.textContent = 'Disconnecting...';
-            
+
             try {
                 const response = await fetch('/api/admin/whatsapp/disconnect', { method: 'POST' });
                 if (response.ok) {
@@ -443,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkDatabaseConnection(dbMode) {
         const dbText = document.getElementById('dbText');
         const dbIndicator = document.getElementById('dbIndicator');
-        
+
         if (dbMode === 'mysql') {
             dbText.textContent = 'MySQL Mode';
             dbIndicator.className = 'indicator-dot green';
@@ -457,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/admin/bookings');
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             bookings = await response.json();
             renderBookingsTable();
         } catch (err) {
@@ -469,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/admin/emails');
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             const emails = await response.json();
             renderEmailsTable(emails);
         } catch (err) {
@@ -480,28 +508,28 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAnalytics() {
         try {
             const dateQuery = `?startDate=${analyticsStart.toISOString()}&endDate=${analyticsEnd.toISOString()}`;
-            
+
             // 1. Fetch live metrics calculations
             const statsRes = await fetch(`/api/admin/stats${dateQuery}`);
             if (statsRes.status === 401) return window.location.href = '/admin/login.html';
             const statsData = await statsRes.json();
-            
+
             gaBreakdowns = statsData.breakdowns || {};
             gaTimeline = statsData.timeline || {};
             gaReferrers = statsData.topReferrers || [];
             gaEvents = statsData.eventsGA || [];
             gaTopPages = statsData.topPages || [];
-            
+
             // 2. Fetch raw sessions & events for diagnostic tables
             const rawRes = await fetch('/api/admin/analytics');
             const rawData = await rawRes.json();
-            
+
             // 3. Render Google Analytics widgets
             renderGAWidgets();
-            
+
             // 4. Load specialized endpoints
             loadAnalyticsTimeline();
-            
+
             // 5. Render raw logs tables
             renderAnalyticsTables(rawData.sessions, rawData.events);
         } catch (err) {
@@ -514,21 +542,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateQuery = `?startDate=${analyticsStart.toISOString()}&endDate=${analyticsEnd.toISOString()}&groupBy=${analyticsGroupBy}`;
             const res = await fetch(`/api/admin/analytics/timeline${dateQuery}`);
             const data = await res.json();
-            
+
             const list = document.getElementById('gaTimelineSummaryList');
             if (!list) return;
-            
+
             list.innerHTML = '';
             if (!data.timeline || data.timeline.length === 0) {
                 list.innerHTML = `<div class="ga-empty-state"><span class="ga-empty-title">No timeline data found</span></div>`;
                 return;
             }
-            
+
             // Sort so most recent is first
             const sorted = data.timeline;
             let maxPageviews = 0;
             sorted.forEach(t => { if (t.pageviews > maxPageviews) maxPageviews = t.pageviews; });
-            
+
             sorted.forEach(t => {
                 const percentage = maxPageviews > 0 ? Math.round((t.pageviews / maxPageviews) * 100) : 0;
                 list.innerHTML += `
@@ -550,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/admin/users');
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             const users = await response.json();
             renderAdminUsersTable(users);
         } catch (err) {
@@ -571,10 +599,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const countryNames = Object.keys(countryData);
         let totalCountryVisitors = 0;
         countryNames.forEach(name => totalCountryVisitors += countryData[name].count || 0);
-        
+
         const sortedCountries = countryNames.map(name => countryData[name])
             .sort((a, b) => b.count - a.count);
-        
+
         if (sortedCountries.length === 0) {
             countriesList.innerHTML = `
                 <div class="ga-empty-state">
@@ -610,12 +638,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const osKeys = Object.keys(osData);
         let totalOsVisitors = 0;
         osKeys.forEach(k => totalOsVisitors += osData[k]);
-        
+
         const sortedOs = osKeys.map(k => ({
             name: k,
             count: osData[k]
         })).sort((a, b) => b.count - a.count);
-        
+
         if (sortedOs.length === 0) {
             osList.innerHTML = `
                 <div class="ga-empty-state">
@@ -642,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         referrersList.innerHTML = '';
         let totalReferrerVisitors = 0;
         gaReferrers.forEach(r => totalReferrerVisitors += r.count);
-        
+
         if (gaReferrers.length === 0) {
             referrersList.innerHTML = `
                 <div class="ga-empty-state">
@@ -670,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. Render Events GA List
         const eventsList = document.getElementById('gaEventsList');
         eventsList.innerHTML = '';
-        
+
         if (gaEvents.length === 0) {
             eventsList.innerHTML = `
                 <div class="ga-empty-state" style="padding: 40px 20px;">
@@ -704,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 let maxViews = 0;
                 gaTopPages.forEach(p => { if (p.views > maxViews) maxViews = p.views; });
-                
+
                 gaTopPages.forEach(p => {
                     const percentage = maxViews > 0 ? Math.round((p.views / maxViews) * 100) : 0;
                     pagesList.innerHTML += `
@@ -724,18 +752,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderGATabs() {
         const listContainer = document.getElementById('gaDevicesBrowsersList');
         listContainer.innerHTML = '';
-        
+
         if (activeGATab === 'devices') {
             const deviceData = gaBreakdowns.devices || {};
             const deviceKeys = Object.keys(deviceData);
             let totalDevices = 0;
             deviceKeys.forEach(k => totalDevices += deviceData[k]);
-            
+
             const sortedDevices = deviceKeys.map(k => ({
                 name: k,
                 count: deviceData[k]
             })).sort((a, b) => b.count - a.count);
-            
+
             if (sortedDevices.length === 0) {
                 listContainer.innerHTML = `
                     <div class="ga-empty-state">
@@ -760,12 +788,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const browserKeys = Object.keys(browserData);
             let totalBrowsers = 0;
             browserKeys.forEach(k => totalBrowsers += browserData[k]);
-            
+
             const sortedBrowsers = browserKeys.map(k => ({
                 name: k,
                 count: browserData[k]
             })).sort((a, b) => b.count - a.count);
-            
+
             if (sortedBrowsers.length === 0) {
                 listContainer.innerHTML = `
                     <div class="ga-empty-state">
@@ -906,8 +934,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     data: browserValues.length > 0 ? browserValues : [1],
                     backgroundColor: browserValues.length > 0 ? [
-                        'rgba(99, 102, 241, 0.65)', 
-                        'rgba(236, 72, 153, 0.65)', 
+                        'rgba(99, 102, 241, 0.65)',
+                        'rgba(236, 72, 153, 0.65)',
                         'rgba(59, 130, 246, 0.65)',
                         'rgba(234, 179, 8, 0.65)'
                     ] : ['rgba(255,255,255,0.05)'],
@@ -963,17 +991,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('bookingsTableBody');
         const searchTerm = document.getElementById('bookingSearch').value.toLowerCase();
         const filterVal = document.getElementById('bookingFilter').value;
-        
+
         tbody.innerHTML = '';
-        
+
         const filtered = bookings.filter(b => {
-            const matchesSearch = b.name.toLowerCase().includes(searchTerm) || 
-                                  b.email.toLowerCase().includes(searchTerm) || 
-                                  b.phone.toLowerCase().includes(searchTerm) || 
-                                  (b.message && b.message.toLowerCase().includes(searchTerm));
-            
+            const matchesSearch = b.name.toLowerCase().includes(searchTerm) ||
+                b.email.toLowerCase().includes(searchTerm) ||
+                b.phone.toLowerCase().includes(searchTerm) ||
+                (b.message && b.message.toLowerCase().includes(searchTerm));
+
             const matchesFilter = filterVal === 'all' || b.status === filterVal;
-            
+
             return matchesSearch && matchesFilter;
         });
 
@@ -984,13 +1012,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filtered.forEach(b => {
             const tr = document.createElement('tr');
-            
+
             // Format preferred service labels
             let serviceLabel = b.service;
             if (b.service === 'online') serviceLabel = '🌐 Online Learning';
             else if (b.service === 'home') serviceLabel = '🏠 Home Tutoring';
             else if (b.service === 'physical') serviceLabel = '🏢 Center Location';
-            
+
             tr.innerHTML = `
                 <td>
                     <div class="user-cell">
@@ -1033,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             select.addEventListener('change', async (e) => {
                 const newStatus = e.target.value;
                 const bookingId = e.target.getAttribute('data-id');
-                
+
                 try {
                     const response = await fetch(`/api/admin/bookings/${bookingId}`, {
                         method: 'PATCH',
@@ -1042,12 +1070,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         },
                         body: JSON.stringify({ status: newStatus })
                     });
-                    
+
                     if (response.ok) {
                         // Update local list state & reapply classes
                         const booking = bookings.find(item => item.id == bookingId);
                         if (booking) booking.status = newStatus;
-                        
+
                         select.className = `select-status ${newStatus}`;
                     } else {
                         throw new Error('Failed to update status.');
@@ -1071,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderEmailsTable(emails) {
         const tbody = document.getElementById('emailsTableBody');
         tbody.innerHTML = '';
-        
+
         if (emails.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center">No emails sent yet.</td></tr>`;
             return;
@@ -1079,11 +1107,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emails.forEach(e => {
             const tr = document.createElement('tr');
-            
+
             let statusClass = 'pending';
             if (e.status === 'sent') statusClass = 'completed';
             if (e.status === 'failed') statusClass = 'cancelled';
-            
+
             tr.innerHTML = `
                 <td>#${e.id}</td>
                 <td>#${e.booking_id || 'N/A'}</td>
@@ -1099,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Setup view action
             tr.querySelector('.btn-view-log').addEventListener('click', () => {
                 const modalContent = document.getElementById('modalContent');
-                
+
                 modalContent.innerHTML = `
                     <p><strong>To:</strong> ${escapeHTML(e.recipient)}</p>
                     <p><strong>Subject:</strong> ${escapeHTML(e.subject)}</p>
@@ -1109,7 +1137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <hr style="border-color: var(--border-color); margin: 16px 0;">
                     <blockquote>${e.body}</blockquote>
                 `;
-                
+
                 emailModal.classList.add('active');
             });
 
@@ -1121,10 +1149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAnalyticsTables(sessions, events) {
         const sessionTbody = document.getElementById('sessionsTableBody');
         const eventsTbody = document.getElementById('eventsTableBody');
-        
+
         sessionTbody.innerHTML = '';
         eventsTbody.innerHTML = '';
-        
+
         // 1. Session Table
         if (sessions.length === 0) {
             sessionTbody.innerHTML = `<tr><td colspan="4" class="text-center">No sessions recorded yet.</td></tr>`;
@@ -1152,17 +1180,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             events.slice(0, 50).forEach(e => { // Limit to recent 50
                 const tr = document.createElement('tr');
-                
+
                 let dataDisplay = '';
                 if (e.event_data) {
                     try {
                         const parsed = typeof e.event_data === 'string' ? JSON.parse(e.event_data) : e.event_data;
                         dataDisplay = JSON.stringify(parsed);
-                    } catch(ex) {
+                    } catch (ex) {
                         dataDisplay = e.event_data;
                     }
                 }
-                
+
                 tr.innerHTML = `
                     <td>${formatTime(e.created_at)}</td>
                     <td><code>${escapeHTML(e.event_type)}</code></td>
@@ -1178,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAdminUsersTable(users) {
         const tbody = document.getElementById('adminsTableBody');
         tbody.innerHTML = '';
-        
+
         if (users.length === 0) {
             tbody.innerHTML = `<tr><td colspan="2" class="text-center">No admins found.</td></tr>`;
             return;
@@ -1200,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function escapeHTML(str) {
         if (!str) return '';
-        return str.replace(/[&<>'"]/g, 
+        return str.replace(/[&<>'"]/g,
             tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
         );
     }
@@ -1208,25 +1236,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatDate(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);
-        return d.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-        }) + ' ' + d.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: true 
+        return d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }) + ' ' + d.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
         });
     }
 
     function formatTime(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);
-        return d.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: true 
+        return d.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
         });
     }
 
@@ -1271,6 +1299,132 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // CTA Button Toggle Handlers
+    const enablePrimaryBtn = document.getElementById('enable_primary_btn');
+    const enableSecondaryBtn = document.getElementById('enable_secondary_btn');
+    const primaryBtnFields = document.getElementById('primary_btn_fields');
+    const secondaryBtnFields = document.getElementById('secondary_btn_fields');
+    const bannerTypeSelect = document.getElementById('banner_type');
+
+    // CTA Action Definitions: Maps action codes to display text (REALISTIC - based on actual pages)
+    // Categories made broad so CTAs are available across most banner types
+    const ctaActionMap = {
+        // Contact & Booking (all lead to booking form)
+        'book_session': { text: 'Book a Session', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'whatsapp_chat': { text: 'Chat on WhatsApp', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'call_us': { text: 'Call Us', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'email_us': { text: 'Email Us', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+
+        // Navigation (actual pages that exist)
+        'view_courses': { text: 'View Our Courses', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'learn_more_about': { text: 'Learn More About Us', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'view_blog': { text: 'Read Our Blog', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'view_faq': { text: 'View FAQs', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+
+        // Page Sections (scroll to sections on index.html)
+        'scroll_home': { text: 'Go to Home', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'scroll_about': { text: 'About Us', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'scroll_services': { text: 'Our Services', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] },
+        'scroll_contact': { text: 'Contact Us', categories: ['program_launch', 'event_webinar', 'success_story', 'promotion', 'announcement', 'enrollment', 'workshop', 'testimonial', 'other'] }
+    };
+
+    // Function to filter CTAs based on banner type
+    function filterCtaOptions(selectElement, bannerType) {
+        const allOptions = Array.from(selectElement.querySelectorAll('optgroup option'));
+
+        if (!bannerType) {
+            // No banner type selected - show all options
+            allOptions.forEach(opt => opt.style.display = '');
+            return;
+        }
+
+        allOptions.forEach(opt => {
+            const actionCode = opt.value;
+            const actionData = ctaActionMap[actionCode];
+
+            if (actionData && actionData.categories) {
+                // Show option if it's relevant to this banner type
+                if (actionData.categories.includes(bannerType)) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
+                }
+            } else {
+                // If no categories defined, show it
+                opt.style.display = '';
+            }
+        });
+    }
+
+    // CTA Suggestions based on Banner Type (updated with realistic actions)
+    const ctaSuggestions = {
+        'program_launch': { primary: 'book_session', secondary: 'view_courses' },
+        'event_webinar': { primary: 'book_session', secondary: 'view_faq' },
+        'success_story': { primary: 'book_session', secondary: 'view_blog' },
+        'promotion': { primary: 'book_session', secondary: 'learn_more_about' },
+        'announcement': { primary: 'scroll_contact', secondary: 'learn_more_about' },
+        'enrollment': { primary: 'book_session', secondary: 'view_courses' },
+        'workshop': { primary: 'book_session', secondary: 'view_faq' },
+        'testimonial': { primary: 'book_session', secondary: 'view_blog' },
+        'other': { primary: 'learn_more_about', secondary: 'scroll_contact' }
+    };
+
+    // Auto-suggest CTAs when banner type changes
+    if (bannerTypeSelect) {
+        bannerTypeSelect.addEventListener('change', (e) => {
+            const bannerType = e.target.value;
+
+            // Filter CTA options based on banner type
+            const primaryActionSelect = document.getElementById('btn_primary_action');
+            const secondaryActionSelect = document.getElementById('btn_secondary_action');
+
+            if (primaryActionSelect) {
+                filterCtaOptions(primaryActionSelect, bannerType);
+            }
+            if (secondaryActionSelect) {
+                filterCtaOptions(secondaryActionSelect, bannerType);
+            }
+
+            // Auto-select suggested actions if available and fields are empty
+            if (bannerType && ctaSuggestions[bannerType]) {
+                const suggestion = ctaSuggestions[bannerType];
+
+                if (primaryActionSelect && !primaryActionSelect.value) {
+                    primaryActionSelect.value = suggestion.primary;
+                }
+                if (secondaryActionSelect && !secondaryActionSelect.value) {
+                    secondaryActionSelect.value = suggestion.secondary;
+                }
+            }
+        });
+    }
+
+    if (enablePrimaryBtn && primaryBtnFields) {
+        enablePrimaryBtn.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                primaryBtnFields.style.display = 'block';
+                document.getElementById('btn_primary_action').required = true;
+            } else {
+                primaryBtnFields.style.display = 'none';
+                document.getElementById('btn_primary_action').required = false;
+                document.getElementById('btn_primary_action').value = '';
+            }
+        });
+    }
+
+    if (enableSecondaryBtn && secondaryBtnFields) {
+        enableSecondaryBtn.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                secondaryBtnFields.style.display = 'block';
+                document.getElementById('btn_secondary_action').required = true;
+            } else {
+                secondaryBtnFields.style.display = 'none';
+                document.getElementById('btn_secondary_action').required = false;
+                document.getElementById('btn_secondary_action').value = '';
+            }
+        });
+    }
+
     function formatDateForLocalInput(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -1285,37 +1439,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openBannerModal(banner = null) {
         bannerForm.reset();
-        
+
         if (banner) {
             // Edit mode
             bannerModalTitle.textContent = 'Edit Highlights Banner';
             document.getElementById('bannerId').value = banner.id;
+            document.getElementById('banner_type').value = banner.banner_type || '';
             document.getElementById('badge_text').value = banner.badge_text || '';
             document.getElementById('badge_class').value = banner.badge_class || 'event-badge';
             document.getElementById('title').value = banner.title || '';
             document.getElementById('subtitle').value = banner.subtitle || '';
-            document.getElementById('btn_primary_text').value = banner.btn_primary_text || '';
-            document.getElementById('btn_primary_link').value = banner.btn_primary_link || '';
-            document.getElementById('btn_secondary_text').value = banner.btn_secondary_text || '';
-            document.getElementById('btn_secondary_link').value = banner.btn_secondary_link || '';
-            document.getElementById('stat_1_number').value = banner.stat_1_number || '';
-            document.getElementById('stat_1_label').value = banner.stat_1_label || '';
-            document.getElementById('stat_2_number').value = banner.stat_2_number || '';
-            document.getElementById('stat_2_label').value = banner.stat_2_label || '';
-            document.getElementById('stat_3_number').value = banner.stat_3_number || '';
-            document.getElementById('stat_3_label').value = banner.stat_3_label || '';
-            document.getElementById('floating_icon').value = banner.floating_icon || '';
-            document.getElementById('floating_title').value = banner.floating_title || '';
-            document.getElementById('floating_desc').value = banner.floating_desc || '';
-            document.getElementById('glow_class').value = banner.glow_class || 'glow-purple';
-            document.getElementById('sort_order').value = banner.sort_order || 0;
             document.getElementById('is_active').value = banner.is_active !== undefined ? banner.is_active : 1;
             document.getElementById('start_date').value = formatDateForLocalInput(banner.start_date);
             document.getElementById('end_date').value = formatDateForLocalInput(banner.end_date);
-            
+
+            // Filter CTAs based on banner type
+            const primaryActionSelect = document.getElementById('btn_primary_action');
+            const secondaryActionSelect = document.getElementById('btn_secondary_action');
+            if (banner.banner_type) {
+                if (primaryActionSelect) filterCtaOptions(primaryActionSelect, banner.banner_type);
+                if (secondaryActionSelect) filterCtaOptions(secondaryActionSelect, banner.banner_type);
+            }
+
+            // Handle Primary Button
+            if (banner.btn_primary_action) {
+                document.getElementById('enable_primary_btn').checked = true;
+                document.getElementById('primary_btn_fields').style.display = 'block';
+                document.getElementById('btn_primary_action').value = banner.btn_primary_action;
+                document.getElementById('btn_primary_action').required = true;
+            } else {
+                document.getElementById('enable_primary_btn').checked = false;
+                document.getElementById('primary_btn_fields').style.display = 'none';
+                document.getElementById('btn_primary_action').required = false;
+            }
+
+            // Handle Secondary Button
+            if (banner.btn_secondary_action) {
+                document.getElementById('enable_secondary_btn').checked = true;
+                document.getElementById('secondary_btn_fields').style.display = 'block';
+                document.getElementById('btn_secondary_action').value = banner.btn_secondary_action;
+                document.getElementById('btn_secondary_action').required = true;
+            } else {
+                document.getElementById('enable_secondary_btn').checked = false;
+                document.getElementById('secondary_btn_fields').style.display = 'none';
+                document.getElementById('btn_secondary_action').required = false;
+            }
+
             imageInput.required = false;
             imageHelp.textContent = 'Leave empty to keep current image.';
-            
+
             if (banner.image_path) {
                 imagePreview.src = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
                 imagePreviewContainer.style.display = 'block';
@@ -1326,14 +1498,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create mode
             bannerModalTitle.textContent = 'Add Highlights Banner';
             document.getElementById('bannerId').value = '';
+            document.getElementById('banner_type').value = '';
             document.getElementById('is_active').value = 1;
             document.getElementById('start_date').value = '';
             document.getElementById('end_date').value = '';
+
+            // Reset button toggles
+            document.getElementById('enable_primary_btn').checked = false;
+            document.getElementById('enable_secondary_btn').checked = false;
+            document.getElementById('primary_btn_fields').style.display = 'none';
+            document.getElementById('secondary_btn_fields').style.display = 'none';
+            document.getElementById('btn_primary_action').required = false;
+            document.getElementById('btn_secondary_action').required = false;
+
             imageInput.required = true;
             imageHelp.textContent = 'Required. Image will be auto-processed to WebP format.';
             imagePreviewContainer.style.display = 'none';
         }
-        
+
         bannerModal.classList.add('active');
     }
 
@@ -1346,29 +1528,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bannerForm) {
         bannerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const bannerId = document.getElementById('bannerId').value;
             const submitBtn = document.getElementById('bannerSubmitBtn');
             const isEdit = !!bannerId;
-            
+
             const url = isEdit ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
             const method = isEdit ? 'PUT' : 'POST';
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = isEdit ? 'Updating Banner...' : 'Creating Banner...';
-            
+
             try {
                 const formData = new FormData(bannerForm);
-                
-                // If it is PUT, standard method override or send as POST with custom headers is not needed since express parses it,
-                // but let's send it as a direct PUT/POST fetch.
+
+                // Clear button fields if checkboxes are not enabled
+                if (!document.getElementById('enable_primary_btn').checked) {
+                    formData.delete('btn_primary_action');
+                    formData.append('btn_primary_action', '');
+                }
+
+                if (!document.getElementById('enable_secondary_btn').checked) {
+                    formData.delete('btn_secondary_action');
+                    formData.append('btn_secondary_action', '');
+                }
+
                 const response = await fetch(url, {
                     method: method,
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.success) {
                     alert(isEdit ? 'Banner updated successfully.' : 'New banner created successfully.');
                     closeBannerModal();
@@ -1389,13 +1580,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadBanners() {
         const grid = document.getElementById('bannersGrid');
         if (!grid) return;
-        
+
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading highlights banners...</div>';
-        
+
         try {
             const response = await fetch('/api/admin/banners');
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             allBanners = await response.json();
             renderBannersGrid(allBanners);
         } catch (err) {
@@ -1408,65 +1599,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderBannersGrid(banners) {
         const grid = document.getElementById('bannersGrid');
         if (!grid) return;
-        
+
         grid.innerHTML = '';
-        
+
         if (banners.length === 0) {
             grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted);"><span style="font-size: 40px; display: block; margin-bottom: 15px;">🖼️</span>No banners added yet. Click "Add New Banner" to get started.</div>';
             return;
         }
-        
+
         banners.forEach(banner => {
             const card = document.createElement('div');
             card.className = 'banner-card';
-            
-            // Build stats list inside the card if present
-            let statsHtml = '';
-            if (banner.stat_1_number || banner.stat_2_number || banner.stat_3_number) {
-                statsHtml += '<div class="banner-card-stats">';
-                if (banner.stat_1_number) {
-                    statsHtml += `
-                        <div class="banner-card-stat">
-                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_1_number)}</span>
-                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_1_label || '')}</span>
-                        </div>
-                    `;
-                }
-                if (banner.stat_2_number) {
-                    statsHtml += `
-                        <div class="banner-card-stat">
-                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_2_number)}</span>
-                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_2_label || '')}</span>
-                        </div>
-                    `;
-                }
-                if (banner.stat_3_number) {
-                    statsHtml += `
-                        <div class="banner-card-stat">
-                            <span class="banner-card-stat-num">${escapeHTML(banner.stat_3_number)}</span>
-                            <span class="banner-card-stat-lbl">${escapeHTML(banner.stat_3_label || '')}</span>
-                        </div>
-                    `;
-                }
-                statsHtml += '</div>';
-            }
 
-            const imgPath = banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path;
+            const imgPath = banner.image_path ? (banner.image_path.startsWith('/') ? banner.image_path : '/' + banner.image_path) : '';
 
             // Compute scheduling details
             const now = new Date();
             let schedLabel = 'Live';
             let schedClass = 'completed';
-            
+
             const isActive = banner.is_active === undefined || banner.is_active == 1;
-            
+
             if (!isActive) {
                 schedLabel = 'Inactive';
                 schedClass = 'cancelled';
             } else {
                 const startDate = banner.start_date ? new Date(banner.start_date) : null;
                 const endDate = banner.end_date ? new Date(banner.end_date) : null;
-                
+
                 if (startDate && now < startDate) {
                     schedLabel = 'Scheduled';
                     schedClass = 'pending';
@@ -1490,9 +1650,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.innerHTML = `
                 <div class="banner-card-img-wrapper ${!isActive ? 'banner-card-dim' : ''}">
-                    <img src="${imgPath}" alt="${escapeHTML(banner.badge_text)}" class="banner-card-img">
+                    ${imgPath ? `<img src="${imgPath}" alt="${escapeHTML(banner.badge_text)}" class="banner-card-img">` : '<div class="banner-card-img" style="background:var(--glass-bg)"></div>'}
                     <span class="status-badge ${banner.badge_class} banner-card-badge">${escapeHTML(banner.badge_text)}</span>
-                    <span class="banner-card-order">Order: ${banner.sort_order}</span>
                     <div class="banner-card-glow"></div>
                 </div>
                 <div class="banner-card-body">
@@ -1514,14 +1673,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h4 class="banner-card-title">${banner.title}</h4>
                     <p class="banner-card-subtitle">${escapeHTML(banner.subtitle)}</p>
                     ${scheduleRangeHtml}
-                    ${statsHtml}
                     <div class="banner-card-actions">
                         <button class="btn btn-view-log edit-banner-btn" data-id="${banner.id}">✏️ Edit</button>
                         <button class="btn btn-danger delete-banner-btn" data-id="${banner.id}">🗑️ Delete</button>
                     </div>
                 </div>
             `;
-            
+
             grid.appendChild(card);
         });
 
@@ -1578,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const response = await fetch(`/api/admin/banners/${id}`, {
                             method: 'DELETE'
                         });
-                        
+
                         const result = await response.json();
                         if (response.ok && result.success) {
                             alert('Banner deleted successfully.');
@@ -1597,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // BOOKING CHAT PANEL LOGIC
     // ==========================================
-    
+
     let activeChatBookingId = null;
     let activeChatBookingNote = null;
     let chatRefreshInterval = null;
@@ -1646,22 +1804,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function openBookingChat(bookingId, customerName, bookingNote) {
         activeChatBookingId = bookingId;
         activeChatBookingNote = bookingNote;
-        
+
         chatPanelName.textContent = customerName;
         chatPanelSubtitle.textContent = `Booking #${bookingId}`;
         chatPanelMessages.innerHTML = '<div class="chat-empty-state"><span class="chat-empty-icon">⏳</span><span class="chat-empty-text">Loading messages...</span></div>';
         adminChatInput.value = '';
-        
+
         resetAdminAttachment();
-        
+
         chatOverlay.classList.add('active');
-        
+
         loadChatMessages();
-        
+
         // Auto-refresh chat every 10 seconds
         if (chatRefreshInterval) clearInterval(chatRefreshInterval);
         chatRefreshInterval = setInterval(loadChatMessages, 10000);
-        
+
         // Focus input
         setTimeout(() => adminChatInput.focus(), 400);
     }
@@ -1688,11 +1846,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadChatMessages() {
         if (!activeChatBookingId) return;
-        
+
         try {
             const response = await fetch(`/api/admin/bookings/${activeChatBookingId}/messages`);
             if (response.status === 401) return window.location.href = '/admin/login.html';
-            
+
             const messages = await response.json();
             renderChatMessages(messages);
         } catch (err) {
@@ -1702,7 +1860,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderChatMessages(messages) {
         chatPanelMessages.innerHTML = '';
-        
+
         // Show the original booking note first if it exists
         if (activeChatBookingNote) {
             chatPanelMessages.innerHTML += `
@@ -1711,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-        
+
         if (messages.length === 0 && !activeChatBookingNote) {
             chatPanelMessages.innerHTML = `
                 <div class="chat-empty-state">
@@ -1721,18 +1879,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-        
+
         messages.forEach(msg => {
             const isAdmin = msg.sender === 'admin';
             const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
-            
+
             const isImage = msg.attachment_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.attachment_url);
             const attachHtml = msg.attachment_url
-                ? `<div class="msg-attachment">${
-                    isImage
-                      ? `<img src="${msg.attachment_url}" alt="${escapeHTML(msg.attachment_name || 'image')}" onclick="window.open(this.src,'_blank')">`
-                      : `<a href="${msg.attachment_url}" download="${escapeHTML(msg.attachment_name || 'file')}">📄 ${escapeHTML(msg.attachment_name || 'Download file')}</a>`
-                  }</div>`
+                ? `<div class="msg-attachment">${isImage
+                    ? `<img src="${msg.attachment_url}" alt="${escapeHTML(msg.attachment_name || 'image')}" onclick="window.open(this.src,'_blank')">`
+                    : `<a href="${msg.attachment_url}" download="${escapeHTML(msg.attachment_name || 'file')}">📄 ${escapeHTML(msg.attachment_name || 'Download file')}</a>`
+                }</div>`
                 : '';
             const textHtml = (msg.message && !msg.message.startsWith('[Attached:')) ? `<div>${escapeHTML(msg.message)}</div>` : '';
 
@@ -1745,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         });
-        
+
         // Auto-scroll to bottom
         chatPanelMessages.scrollTop = chatPanelMessages.scrollHeight;
     }
@@ -1754,10 +1911,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = adminChatInput.value.trim();
         if (!message && !adminSelectedFile) return;
         if (!activeChatBookingId) return;
-        
+
         adminChatSendBtn.disabled = true;
         adminChatSendBtn.textContent = '...';
-        
+
         try {
             let response;
             if (adminSelectedFile) {
@@ -1775,7 +1932,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ message })
                 });
             }
-            
+
             if (response.ok) {
                 adminChatInput.value = '';
                 resetAdminAttachment();
@@ -1877,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/admin/content');
             if (response.status === 401) return window.location.href = '/admin/login.html';
             const content = await response.json();
-            
+
             document.getElementById('content_mission_statement').value = content.mission_statement || '';
             document.getElementById('content_vision').value = content.vision || '';
             document.getElementById('content_history').value = content.history || '';
@@ -2435,6 +2592,139 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtn.textContent = 'Publish Post';
             }
         });
+    }
+
+    // ==========================================
+    // SOCIAL MEDIA MANAGEMENT
+    // ==========================================
+    const socialModal = document.getElementById('socialModal');
+    const socialForm = document.getElementById('socialForm');
+    const socialModalTitle = document.getElementById('socialModalTitle');
+    const addSocialBtn = document.getElementById('addSocialBtn');
+    const socialModalCloseBtn = document.getElementById('socialModalCloseBtn');
+    const socialCancelBtn = document.getElementById('socialCancelBtn');
+    let allSocialLinks = [];
+
+    if (addSocialBtn) addSocialBtn.addEventListener('click', () => openSocialModal());
+    if (socialModalCloseBtn) socialModalCloseBtn.addEventListener('click', () => closeSocialModal());
+    if (socialCancelBtn) socialCancelBtn.addEventListener('click', () => closeSocialModal());
+
+    function openSocialModal(social = null) {
+        if (!socialModal || !socialForm) return;
+        socialForm.reset();
+        document.getElementById('socialId').value = '';
+        if (social) {
+            socialModalTitle.textContent = 'Edit Social Media Link';
+            document.getElementById('socialId').value = social.id;
+            document.getElementById('social_name').value = social.name || '';
+            document.getElementById('social_url').value = social.url || '';
+            document.getElementById('social_display_order').value = social.display_order || 0;
+        } else {
+            socialModalTitle.textContent = 'Add Social Media Link';
+        }
+        socialModal.classList.add('active');
+    }
+
+    function closeSocialModal() {
+        if (socialModal) socialModal.classList.remove('active');
+        if (socialForm) socialForm.reset();
+    }
+
+    if (socialForm) {
+        socialForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('socialId').value;
+            const submitBtn = document.getElementById('socialSubmitBtn');
+            const isEdit = !!id;
+            const url = isEdit ? `/api/admin/social-media/${id}` : '/api/admin/social-media';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            const payload = {
+                name: document.getElementById('social_name').value.trim(),
+                url: document.getElementById('social_url').value.trim(),
+                display_order: parseInt(document.getElementById('social_display_order').value) || 0
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(isEdit ? 'Social media link updated!' : 'Social media link added!');
+                    closeSocialModal();
+                    loadSocialMedia();
+                } else {
+                    throw new Error(result.error || 'Failed to save social media link.');
+                }
+            } catch (err) {
+                alert('Error saving social link: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Social Link';
+            }
+        });
+    }
+
+    async function loadSocialMedia() {
+        const tbody = document.getElementById('socialTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Loading social media links...</td></tr>';
+        try {
+            const response = await fetch('/api/admin/social-media');
+            if (response.status === 401) return window.location.href = '/admin/login.html';
+            allSocialLinks = await response.json();
+            tbody.innerHTML = '';
+            if (allSocialLinks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">No social media links configured yet.</td></tr>';
+                return;
+            }
+            allSocialLinks.forEach(link => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHTML(link.name)}</strong></td>
+                    <td><a href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); word-break: break-all;">${escapeHTML(link.url)}</a></td>
+                    <td>${link.display_order}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-view-log edit-social-btn" data-id="${link.id}" style="padding: 4px 8px; font-size: 12px;">✏️ Edit</button>
+                            <button class="btn btn-danger delete-social-btn" data-id="${link.id}" style="padding: 4px 8px; font-size: 12px;">🗑️ Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            tbody.querySelectorAll('.edit-social-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const link = allSocialLinks.find(s => s.id == btn.getAttribute('data-id'));
+                    if (link) openSocialModal(link);
+                });
+            });
+            tbody.querySelectorAll('.delete-social-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+                    if (confirm('Delete this social media link?')) {
+                        try {
+                            const res = await fetch(`/api/admin/social-media/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                alert('Deleted!');
+                                loadSocialMedia();
+                            }
+                        } catch (err) {
+                            alert('Error: ' + err.message);
+                        }
+                    }
+                });
+            });
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #ef4444;">Failed to load social media links.</td></tr>';
+        }
     }
 
     async function loadBlogPosts() {

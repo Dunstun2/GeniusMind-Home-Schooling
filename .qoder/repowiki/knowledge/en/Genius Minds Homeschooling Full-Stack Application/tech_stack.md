@@ -1,0 +1,1 @@
+Express + express-session on top of mysql2/sqlite3 with a unified in-memory fallback; Nodemailer for outbound mail, IMAPFlow+mailparser for inbound email capture, @whiskeysockets/baileys for WhatsApp, bcryptjs for passwords, multer for uploads, and QRCode generation — all configured centrally in `server.js` and consumed by both public and admin routes.

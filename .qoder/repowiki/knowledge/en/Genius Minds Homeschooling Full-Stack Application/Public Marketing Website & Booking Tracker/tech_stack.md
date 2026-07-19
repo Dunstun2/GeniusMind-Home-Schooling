@@ -1,0 +1,1 @@
+Plain HTML5 + CSS3 + vanilla JavaScript; fonts loaded from Google Fonts (Outfit, Inter); styling driven by CSS custom properties and glass-morphism utilities consumed from the shared `styles.css`. No SPA framework or build toolchain.

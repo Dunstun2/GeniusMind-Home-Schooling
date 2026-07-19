@@ -226,10 +226,24 @@
         }
         @media (max-width: 640px) {
             .form-row { grid-template-columns: 1fr; }
-            .quick-strip { grid-template-columns: 1fr; }
+            .quick-strip { 
+                display: none;
+            }
+            /* Remove top padding from the parent section when quick-strip is hidden */
+            section[style*="padding: 8rem 0 0"] {
+                padding: 0 !important;
+            }
+            .contact-page-section {
+                padding-top: 5.5rem;
+            }
             .booking-card { padding: 1.75rem; }
             .contact-info-card { padding: 1.75rem; }
             .map-wrapper { height: 280px; }
+        }
+        @media (max-width: 480px) {
+            .booking-card, .contact-info-card, .hours-card { padding: 1.25rem; }
+            .cd-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+            .quick-card { padding: 1.5rem 1rem; }
         }
     </style>
 </head>
@@ -238,22 +252,8 @@
         <div id="navbar-placeholder"></div>
     </nav>
 
-    <!-- Inner Hero -->
-    <section class="inner-hero">
-        <div class="container">
-            <div class="breadcrumb">
-                <a href="index.html">Home</a>
-                <span>›</span>
-                <span>Contact Us</span>
-            </div>
-            <div class="badge">Get In Touch</div>
-            <h1>Contact <span>Us</span></h1>
-            <p>We'd love to hear from you. Book a session, ask a question, or simply say hello — we typically respond within 2 hours.</p>
-        </div>
-    </section>
-
     <!-- Quick Contact Cards -->
-    <section style="padding: 3rem 0 0;">
+    <section style="padding: 8rem 0 0;">
         <div class="container">
             <div class="quick-strip">
                 <a href="tel:+254743322975" class="quick-card">
@@ -315,6 +315,14 @@
                             <div class="cd-info">
                                 <span>WhatsApp</span>
                                 <strong><a href="https://wa.me/254743322975" target="_blank" rel="noopener">Chat on WhatsApp →</a></strong>
+                            </div>
+                        </div>
+
+                        <!-- Social Media Links -->
+                        <div class="contact-social-wrapper" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.15);">
+                            <span style="display: block; font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Follow Us</span>
+                            <div class="contact-social-links" id="contact-social-links">
+                                <!-- Dynamic social media icons will be injected here -->
                             </div>
                         </div>
                     </div>

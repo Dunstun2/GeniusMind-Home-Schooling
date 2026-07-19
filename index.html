@@ -51,11 +51,49 @@
     <title>Genius Minds Homeschooling | Quality Education at Home</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/images/logo-favicon.png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=1.7">
+    
+    <!-- Force buttons side-by-side on ALL devices including mobile -->
+    <style>
+        /* FORCE: All screens buttons side-by-side */
+        .hero-buttons,
+        .highlights-slider .hero-buttons {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            flex-wrap: nowrap !important;
+            width: 100% !important;
+        }
+        
+        .hero-buttons .btn,
+        .highlights-slider .hero-buttons .btn {
+            display: inline-block !important;
+            flex: 1 !important;
+            max-width: 48% !important;
+            min-width: 130px !important;
+            white-space: normal !important;
+            text-align: center !important;
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 380px) {
+            .hero-buttons .btn,
+            .highlights-slider .hero-buttons .btn {
+                font-size: 0.8rem !important;
+                padding: 0.65rem 0.5rem !important;
+                min-width: 120px !important;
+            }
+        }
+    </style>
+
 </head>
 <body>
     <!-- Navbar Placeholder -->
-    <div id="navbar-placeholder"></div>
+    <nav class="navbar">
+        <div id="navbar-placeholder"></div>
+    </nav>
 
     <!-- Achievements & Announcements Highlights Slider -->
     <section class="highlights-slider">
@@ -253,93 +291,93 @@
         </div>
     </section>
 
-    <!-- About Us -->
-    <section id="about" class="about">
+    <!-- About Us - Optimized -->
+    <section id="about" class="about" aria-labelledby="about-heading">
         <div class="container">
-            <div class="section-header text-center">
-                <h2 class="section-title">About <span>Us</span></h2>
+            <header class="section-header text-center">
+                <h2 id="about-heading" class="section-title">About <span>Us</span></h2>
                 <p class="section-desc">Dedicated to providing high-quality and affordable tutoring services for learners of all ages.</p>
-            </div>
-            <div class="about-grid">
-                <div class="about-card">
-                    <div class="icon-wrapper">🌍</div>
+            </header>
+            <div class="about-grid" role="list">
+                <article class="about-card" role="listitem">
+                    <div class="icon-wrapper" aria-hidden="true">🌍</div>
                     <h3>Nairobi-Based</h3>
-                    <p>We are a locally rooted platform providing accessible education tailored to students in Nairobi and beyond.</p>
-                </div>
-                <div class="about-card">
-                    <div class="icon-wrapper">🎓</div>
+                    <p>Locally rooted platform providing accessible education tailored to students in Nairobi and beyond.</p>
+                </article>
+                <article class="about-card" role="listitem">
+                    <div class="icon-wrapper" aria-hidden="true">🎓</div>
                     <h3>Qualified Teachers</h3>
-                    <p>Our team consists of experienced professionals who are passionate about helping students achieve academic success.</p>
-                </div>
-                <div class="about-card">
-                    <div class="icon-wrapper">🎯</div>
+                    <p>Experienced professionals passionate about helping students achieve academic success.</p>
+                </article>
+                <article class="about-card" role="listitem">
+                    <div class="icon-wrapper" aria-hidden="true">🎯</div>
                     <h3>Personalized Support</h3>
-                    <p>We ensure every student receives targeted academic support to overcome challenges in sciences, mathematics, and more.</p>
-                </div>
+                    <p>Every student receives targeted academic support to overcome challenges in sciences, mathematics, and more.</p>
+                </article>
             </div>
         </div>
     </section>
 
-    <!-- Services -->
-    <section id="services" class="services">
+    <!-- Services - Optimized -->
+    <section id="services" class="services" aria-labelledby="services-heading">
         <div class="container">
-            <div class="section-header text-center">
-                <h2 class="section-title">Flexible Learning <span>Options</span></h2>
-                <p class="section-desc">Choose the learning environment that best suits your child's needs and your schedule.</p>
-            </div>
-            <div class="services-grid">
-                <div class="service-card">
-                    <img src="assets/images/online.png" alt="Online Teaching" class="service-img">
+            <header class="section-header text-center">
+                <h2 id="services-heading" class="section-title">Flexible Learning <span>Options</span></h2>
+                <p class="section-desc">Choose the learning environment that best suits your child's needs and schedule.</p>
+            </header>
+            <div class="services-grid" role="list">
+                <article class="service-card" role="listitem">
+                    <img src="assets/images/online.png" alt="Online teaching with interactive virtual classroom" class="service-img" loading="lazy" width="400" height="300">
                     <div class="service-content">
                         <h3>Online Teaching</h3>
-                        <p>Interactive, engaging virtual classrooms accessible from anywhere. Perfect for busy schedules and remote learning.</p>
-                        <a href="#contact" class="btn btn-text">Book Online Session &rarr;</a>
+                        <p>Interactive virtual classrooms accessible from anywhere. Perfect for busy schedules and remote learning.</p>
+                        <a href="#contact" class="btn btn-text" aria-label="Book an online teaching session">Book Online Session &rarr;</a>
                     </div>
-                </div>
-                <div class="service-card">
-                    <img src="assets/images/hero.png" alt="Home-based Tutoring" class="service-img">
+                </article>
+                <article class="service-card" role="listitem">
+                    <img src="assets/images/hero.png" alt="Home-based tutoring with personalized one-on-one sessions" class="service-img" loading="lazy" width="400" height="300">
                     <div class="service-content">
                         <h3>Home-Based Tutoring</h3>
-                        <p>Our qualified teachers visit your home to provide one-on-one personalized education in a familiar environment.</p>
-                        <a href="#contact" class="btn btn-text">Request Home Tutor &rarr;</a>
+                        <p>Qualified teachers visit your home to provide one-on-one personalized education in a familiar environment.</p>
+                        <a href="#contact" class="btn btn-text" aria-label="Request a home-based tutor">Request Home Tutor &rarr;</a>
                     </div>
-                </div>
-                <div class="service-card">
-                    <img src="assets/images/physical.png" alt="Physical Location" class="service-img">
+                </article>
+                <article class="service-card" role="listitem">
+                    <img src="assets/images/physical.png" alt="Physical learning center with structured classroom environment" class="service-img" loading="lazy" width="400" height="300">
                     <div class="service-content">
                         <h3>Physical Location</h3>
-                        <p>A vibrant, dedicated learning center available for parents who prefer a structured, away-from-home environment.</p>
-                        <a href="#contact" class="btn btn-text">Visit Our Center &rarr;</a>
+                        <p>Vibrant, dedicated learning center for parents who prefer a structured, away-from-home environment.</p>
+                        <a href="#contact" class="btn btn-text" aria-label="Visit our physical learning center">Visit Our Center &rarr;</a>
                     </div>
-                </div>
+                </article>
             </div>
         </div>
     </section>
 
-    <!-- Curriculum Section -->
-    <section id="curriculum" class="curriculum">
+    <!-- Curriculum Section - Optimized -->
+    <section id="curriculum" class="curriculum" aria-labelledby="curriculum-heading">
         <div class="container">
             <div class="curriculum-content">
                 <div class="text-content">
-                    <h2 class="section-title">All Major <span>Curricula</span> Supported</h2>
-                    <p class="section-desc">We support all major educational systems, ensuring a seamless academic journey regardless of your preferred learning path.</p>
-                    <ul class="curriculum-list">
-                        <li>
-                            <div class="check-icon">✓</div>
+                    <h2 id="curriculum-heading" class="section-title">All Major <span>Curricula</span> Supported</h2>
+                    <p class="section-desc">We support all major educational systems, ensuring a seamless academic journey.</p>
+                    <ul class="curriculum-list" role="list">
+                        <li role="listitem">
+                            <div class="check-icon" aria-hidden="true">✓</div>
                             <div>
                                 <h4>IGCSE</h4>
                                 <p>Comprehensive support for the International General Certificate of Secondary Education.</p>
                             </div>
                         </li>
-                        <li>
-                            <div class="check-icon">✓</div>
+                        <li role="listitem">
+                            <div class="check-icon" aria-hidden="true">✓</div>
                             <div>
                                 <h4>CBE / CBC</h4>
                                 <p>Expertise in the Competency-Based Curriculum, focusing on skills and practical knowledge.</p>
                             </div>
                         </li>
-                        <li>
-                            <div class="check-icon">✓</div>
+                        <li role="listitem">
+                            <div class="check-icon" aria-hidden="true">✓</div>
                             <div>
                                 <h4>8-4-4 System</h4>
                                 <p>Robust tutoring for the traditional Kenyan education system, from primary to secondary levels.</p>
@@ -347,21 +385,21 @@
                         </li>
                     </ul>
                 </div>
-                <div class="curriculum-highlights-card glass-card">
+                <aside class="curriculum-highlights-card glass-card" aria-label="Why choose us highlights">
                     <div class="highlight-badge">Why Choose Us?</div>
                     <div class="highlight-stat-item">
-                        <div class="stat-num">100%</div>
+                        <div class="stat-num" aria-label="100 percent">100%</div>
                         <div class="stat-lbl">Exam Pass Rate (IGCSE Mock & Finals)</div>
                     </div>
                     <div class="highlight-stat-item">
-                        <div class="stat-num">50+</div>
+                        <div class="stat-num" aria-label="50 plus">50+</div>
                         <div class="stat-lbl">Qualified & Background-Vetted Tutors</div>
                     </div>
                     <div class="highlight-stat-item">
-                        <div class="stat-num">4.9★</div>
+                        <div class="stat-num" aria-label="4.9 stars out of 5">4.9★</div>
                         <div class="stat-lbl">Google Rating based on 120+ parent reviews</div>
                     </div>
-                </div>
+                </aside>
             </div>
         </div>
     </section>
@@ -557,103 +595,103 @@
         </div>
     </section>
 
-    <!-- FAQ Section -->
-    <section id="faq" class="faq-section">
+    <!-- FAQ Section - Optimized with Schema -->
+    <section id="faq" class="faq-section" aria-labelledby="faq-heading" itemscope itemtype="https://schema.org/FAQPage">
         <div class="container">
-            <div class="text-center mb-5" style="margin-bottom: 3rem;">
-                <h2 class="section-title">Frequently Asked <span>Questions</span></h2>
-                <p class="section-desc" style="max-width: 600px; margin: 0 auto 3rem auto;">Have questions? We have compiled the most common inquiries from parents about our tutoring and homeschooling programs.</p>
-            </div>
+            <header class="text-center mb-5" style="margin-bottom: 3rem;">
+                <h2 id="faq-heading" class="section-title">Frequently Asked <span>Questions</span></h2>
+                <p class="section-desc" style="max-width: 600px; margin: 0 auto 3rem auto;">Common inquiries from parents about our tutoring and homeschooling programs.</p>
+            </header>
             
             <div class="faq-wrapper">
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>How do I get started with Genius Minds?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-1">
+                        <span itemprop="name">How do I get started with Genius Minds?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>Getting started is simple! Just fill out our booking form at the bottom of the page or call us directly. We will schedule a free initial assessment to understand your child's needs and match them with the perfect tutor.</p>
+                    <div class="faq-answer" id="faq-answer-1" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">Getting started is simple! Fill out our booking form or call us directly. We'll schedule a free initial assessment to understand your child's needs and match them with the perfect tutor.</p>
                     </div>
-                </div>
+                </article>
 
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>Do you offer physical in-person home tutoring or online classes?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-2">
+                        <span itemprop="name">Do you offer physical in-person home tutoring or online classes?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>We offer both! We provide in-person tutoring where our qualified tutors visit your home in Nairobi (Karen, Runda, Westlands, Kilimani, etc.), online interactive tutoring for students globally, and physical classes at our structured learning center.</p>
+                    <div class="faq-answer" id="faq-answer-2" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">We offer both! In-person tutoring where tutors visit your home in Nairobi, online interactive tutoring for students globally, and physical classes at our structured learning center.</p>
                     </div>
-                </div>
+                </article>
 
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>Which curricula do you support?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-3">
+                        <span itemprop="name">Which curricula do you support?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>We support all major curricula, including British International (IGCSE/GCSE), Competency-Based Curriculum (CBC), the traditional Kenyan 8-4-4 system, and the US Curriculum.</p>
+                    <div class="faq-answer" id="faq-answer-3" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">We support all major curricula, including British International (IGCSE/GCSE), Competency-Based Curriculum (CBC), the traditional Kenyan 8-4-4 system, and the US Curriculum.</p>
                     </div>
-                </div>
+                </article>
 
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>How are your tutors selected and vetted?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-4">
+                        <span itemprop="name">How are your tutors selected and vetted?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>All our tutors are university graduates, certified educators, or subject-matter experts. They undergo rigorous background checks, reference checks, and interview vetting to ensure safety, reliability, and academic excellence.</p>
+                    <div class="faq-answer" id="faq-answer-4" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">All tutors are university graduates, certified educators, or subject-matter experts. They undergo rigorous background checks, reference checks, and interview vetting to ensure safety, reliability, and academic excellence.</p>
                     </div>
-                </div>
+                </article>
 
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>Can we schedule classes on weekends or evenings?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-5">
+                        <span itemprop="name">Can we schedule classes on weekends or evenings?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>Yes, our schedules are highly flexible. We customize tutoring sessions to fit your family's routine, offering classes during weekdays, evenings, or weekends.</p>
+                    <div class="faq-answer" id="faq-answer-5" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">Yes, our schedules are highly flexible. We customize tutoring sessions to fit your family's routine, offering classes during weekdays, evenings, or weekends.</p>
                     </div>
-                </div>
+                </article>
 
-                <div class="faq-item glass-card">
-                    <button class="faq-question">
-                        <span>How do you track my child's academic progress?</span>
-                        <span class="faq-toggle-icon">+</span>
+                <article class="faq-item glass-card" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                    <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-6">
+                        <span itemprop="name">How do you track my child's academic progress?</span>
+                        <span class="faq-toggle-icon" aria-hidden="true">+</span>
                     </button>
-                    <div class="faq-answer">
-                        <p>We provide detailed weekly progress reports to parents, regular mock assessments to track understanding, and continuous feedback directly from the tutor after each session.</p>
+                    <div class="faq-answer" id="faq-answer-6" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                        <p itemprop="text">We provide detailed weekly progress reports to parents, regular mock assessments to track understanding, and continuous feedback directly from the tutor after each session.</p>
                     </div>
-                </div>
+                </article>
             </div>
         </div>
     </section>
 
-    <!-- Contact & Booking -->
-    <section id="contact" class="contact">
+    <!-- Contact & Booking - Optimized -->
+    <section id="contact" class="contact" aria-labelledby="contact-heading">
         <div class="container">
             <div class="contact-wrapper glass-card">
                 <div class="contact-info">
-                    <h2 class="section-title">Ready to <span>Enroll?</span></h2>
-                    <p class="mb-4">Your success story is just a click away. Reach out to us today to book a session or ask any questions.</p>
+                    <h2 id="contact-heading" class="section-title">Ready to <span>Enroll?</span></h2>
+                    <p class="mb-4">Your success story is just a click away. Reach out to us today to book a session or ask questions.</p>
                     
-                    <div class="contact-methods">
-                        <a href="tel:+254743322975" class="contact-method" id="contact-phone-link">
-                            <div class="method-icon">📞</div>
+                    <div class="contact-methods" role="list">
+                        <a href="tel:+254743322975" class="contact-method" id="contact-phone-link" role="listitem" aria-label="Call us at +254 743-322-975">
+                            <div class="method-icon" aria-hidden="true">📞</div>
                             <div class="method-details">
                                 <span>Call Us</span>
                                 <strong id="display-phone">+254 743-322-975</strong>
                             </div>
                         </a>
-                        <a href="mailto:geniusminds2425@gmail.com" class="contact-method" id="contact-email-link">
-                            <div class="method-icon">✉️</div>
+                        <a href="mailto:geniusminds2425@gmail.com" class="contact-method" id="contact-email-link" role="listitem" aria-label="Email us at geniusminds2425@gmail.com">
+                            <div class="method-icon" aria-hidden="true">✉️</div>
                             <div class="method-details">
                                 <span>Email Us</span>
                                 <strong id="display-email">geniusminds2425@gmail.com</strong>
                             </div>
                         </a>
-                        <div class="contact-method">
-                            <div class="method-icon">📍</div>
+                        <div class="contact-method" role="listitem">
+                            <div class="method-icon" aria-hidden="true">📍</div>
                             <div class="method-details">
                                 <span>Location</span>
                                 <strong id="display-location">Nairobi, Kenya</strong>
@@ -662,23 +700,23 @@
                     </div>
                 </div>
                 <div class="contact-form-wrapper">
-                    <form id="bookingForm" class="booking-form">
+                    <form id="bookingForm" class="booking-form" aria-label="Book a tutoring session">
                         <h3>Book a Session</h3>
                         <div class="form-group">
-                            <label for="name">Parent's Name</label>
-                            <input type="text" id="name" required placeholder="Enter your full name">
+                            <label for="name">Parent's Name <span aria-label="required">*</span></label>
+                            <input type="text" id="name" name="name" required placeholder="Enter your full name" aria-required="true">
                         </div>
                         <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" required placeholder="Enter your email">
+                            <label for="email">Email Address <span aria-label="required">*</span></label>
+                            <input type="email" id="email" name="email" required placeholder="Enter your email" aria-required="true">
                         </div>
                         <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" required placeholder="Enter your phone number">
+                            <label for="phone">Phone Number <span aria-label="required">*</span></label>
+                            <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number" aria-required="true">
                         </div>
                         <div class="form-group">
-                            <label for="service">Preferred Service</label>
-                            <select id="service" required>
+                            <label for="service">Preferred Service <span aria-label="required">*</span></label>
+                            <select id="service" name="service" required aria-required="true">
                                 <option value="" disabled selected>Select an option</option>
                                 <option value="online">Online Teaching</option>
                                 <option value="home">Home-Based Tutoring</option>
@@ -687,7 +725,7 @@
                         </div>
                         <div class="form-group">
                             <label for="message">Additional Notes</label>
-                            <textarea id="message" rows="3" placeholder="Tell us about the student's needs..."></textarea>
+                            <textarea id="message" name="message" rows="3" placeholder="Tell us about the student's needs..." aria-label="Additional notes about student needs"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Submit Booking Request</button>
                     </form>
@@ -701,6 +739,7 @@
     <div id="footer-placeholder"></div>
 
     <script src="analytics.js"></script>
+    <script src="banner-cta-handler.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

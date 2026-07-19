@@ -1,0 +1,6 @@
+- Every page declares full SEO metadata: charset, viewport, description, keywords, robots, canonical URL, plus matching Open Graph and Twitter Card blocks in the `<head>`.
+- Schema.org markup is embedded inline as `<script type="application/ld+json">` blocks (e.g. EducationalOrganization on index, FAQPage on faq).
+- Navigation and footer are not duplicated per page; instead placeholder `<div>`s (`#navbar-placeholder`, `#footer-placeholder`) are left empty for runtime injection.
+- Interactive sections use ARIA attributes (`aria-labelledby`, `aria-expanded`, `aria-controls`, `role="list"/"listitem"`) alongside semantic `<section>`, `<article>`, `<header>` elements.
+- Images carry explicit `loading="lazy"` plus intrinsic `width`/`height` attributes to aid Core Web Vitals.
+- Client-side state in `track.html` is keyed off a `?token=` URL parameter fetched via `URLSearchParams`, with loading/error/ready UI states toggled by showing/hiding dedicated DOM nodes.

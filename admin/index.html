@@ -65,6 +65,9 @@
                         <a href="#settings" class="nav-item" data-tab="settings">
                             <span class="nav-icon">⚙️</span> Site Settings
                         </a>
+                        <a href="#social" class="nav-item" data-tab="social">
+                            <span class="nav-icon">🌐</span> Social Media
+                        </a>
                     </div>
                 </div>
             </nav>
@@ -95,6 +98,9 @@
                     <h1 class="page-title" id="pageTitle">System Overview</h1>
                 </div>
                 <div class="user-controls">
+                    <button id="themeToggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode">
+                        <span class="theme-icon">🌙</span>
+                    </button>
                     <div class="user-info">
                         <span class="user-avatar" id="userAvatar">A</span>
                         <div class="user-text">
@@ -661,6 +667,32 @@
                     </div>
                 </section>
 
+                <!-- Section 13: Social Media -->
+                <section id="tab-social" class="tab-content">
+                    <div class="action-bar">
+                        <div class="section-info">
+                            <h3>Manage Social Media Links</h3>
+                            <p class="section-subtitle">Add, edit, or remove social media platform links. These are displayed in the website footer and contact page for visitors.</p>
+                        </div>
+                        <button id="addSocialBtn" class="btn btn-primary">➕ Add Social Link</button>
+                    </div>
+                    <div class="table-container glass-card">
+                        <table class="data-table" id="socialTable">
+                            <thead>
+                                <tr>
+                                    <th>Platform</th>
+                                    <th>URL</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="socialTableBody">
+                                <!-- Dynamic social media rows will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
                 <!-- Section 12: Blog & News -->
                 <section id="tab-blog" class="tab-content">
                     <div class="action-bar">
@@ -702,25 +734,28 @@
                 <form id="bannerForm" enctype="multipart/form-data">
                     <input type="hidden" id="bannerId" name="id">
                     
-                    <!-- Basic Information -->
-                    <div class="form-grid">
-                        <div class="form-group-glass">
-                            <label for="badge_text">Badge Text *</label>
-                            <input type="text" id="badge_text" name="badge_text" required placeholder="e.g. Upcoming Event, Success story">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="badge_class">Badge Theme Class *</label>
-                            <select id="badge_class" name="badge_class" required>
-                                <option value="event-badge">Indigo (Event Theme)</option>
-                                <option value="success-badge">Green (Success Theme)</option>
-                                <option value="announce-badge">Orange (Announcement Theme)</option>
-                            </select>
-                        </div>
-                    </div>
-
+                    <!-- Banner Type Selection -->
                     <div class="form-group-glass">
-                        <label for="title">Title * (Use &lt;span&gt;...&lt;/span&gt; for highlighted text)</label>
-                        <input type="text" id="title" name="title" required placeholder="e.g. Junior Programmer &lt;span&gt;Bootcamp.&lt;/span&gt;">
+                        <label for="banner_type">Banner Type (Internal - for organization) *</label>
+                        <select id="banner_type" name="banner_type" required>
+                            <option value="">-- Select Banner Type --</option>
+                            <option value="program_launch">🚀 New Program Launch</option>
+                            <option value="event_webinar">📅 Event/Webinar</option>
+                            <option value="success_story">⭐ Success Story/Achievement</option>
+                            <option value="promotion">🎁 Limited Offer/Promotion</option>
+                            <option value="announcement">📢 General Announcement</option>
+                            <option value="enrollment">📝 Enrollment Period</option>
+                            <option value="workshop">🎓 Workshop/Training</option>
+                            <option value="testimonial">💬 Testimonial/Review</option>
+                            <option value="other">📌 Other</option>
+                        </select>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">This helps organize your banners and filters available CTAs. Not visible to visitors.</p>
+                    </div>
+                    
+                    <!-- Basic Information -->
+                    <div class="form-group-glass">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" name="title" required placeholder="e.g. Junior Programmer Bootcamp">
                     </div>
 
                     <div class="form-group-glass">
@@ -728,92 +763,103 @@
                         <textarea id="subtitle" name="subtitle" rows="3" required placeholder="Describe the event, announcement or achievement..."></textarea>
                     </div>
 
+                    <div class="form-group-glass">
+                        <label for="badge_text">Badge Text *</label>
+                        <input type="text" id="badge_text" name="badge_text" required placeholder="e.g. Upcoming Event, Success story">
+                    </div>
+
+                    <div class="form-group-glass">
+                        <label for="badge_class">Badge Style *</label>
+                        <select id="badge_class" name="badge_class" required>
+                            <option value="event-badge">🟣 Purple (Events/Upcoming)</option>
+                            <option value="success-badge">🟢 Green (Success/Achievement)</option>
+                            <option value="announce-badge">🟠 Orange (Announcements/Promotions)</option>
+                        </select>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Determines the badge color and glow effect of the banner.</p>
+                    </div>
+
                     <!-- Call To Action Buttons -->
-                    <div class="form-grid">
-                        <div class="form-group-glass">
-                            <label for="btn_primary_text">Primary Button Text</label>
-                            <input type="text" id="btn_primary_text" name="btn_primary_text" placeholder="e.g. Enroll Now">
+                    <div class="form-section-header">
+                        <h4 style="color: var(--text-title); font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🎯</span> Call-to-Action Buttons
+                        </h4>
+                        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">Select action buttons with real functionality (optional)</p>
+                    </div>
+
+                    <!-- Primary Button -->
+                    <div class="cta-button-group">
+                        <div class="cta-button-header">
+                            <label style="font-weight: 600; color: var(--text-title); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                <input type="checkbox" id="enable_primary_btn" style="width: 16px; height: 16px; cursor: pointer;">
+                                Enable Primary Button
+                            </label>
                         </div>
-                        <div class="form-group-glass">
-                            <label for="btn_primary_link">Primary Button Link</label>
-                            <input type="text" id="btn_primary_link" name="btn_primary_link" placeholder="e.g. #contact">
+                        <div id="primary_btn_fields" class="cta-fields" style="display: none;">
+                            <div class="form-group-glass">
+                                <label for="btn_primary_action">Primary Action *</label>
+                                <select id="btn_primary_action" name="btn_primary_action">
+                                    <option value="">-- Select Action --</option>
+                                    <optgroup label="📞 Contact & Booking">
+                                        <option value="book_session">Book a Session</option>
+                                        <option value="whatsapp_chat">Chat on WhatsApp</option>
+                                        <option value="call_us">Call Us</option>
+                                        <option value="email_us">Email Us</option>
+                                    </optgroup>
+                                    <optgroup label="📚 Navigation">
+                                        <option value="view_courses">View Our Courses</option>
+                                        <option value="learn_more_about">Learn More About Us</option>
+                                        <option value="view_blog">Read Our Blog</option>
+                                        <option value="view_faq">View FAQs</option>
+                                    </optgroup>
+                                    <optgroup label="📖 Page Sections">
+                                        <option value="scroll_home">Go to Home</option>
+                                        <option value="scroll_about">About Us Section</option>
+                                        <option value="scroll_services">Our Services</option>
+                                        <option value="scroll_contact">Contact Section</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div class="form-group-glass">
-                            <label for="btn_secondary_text">Secondary Button Text</label>
-                            <input type="text" id="btn_secondary_text" name="btn_secondary_text" placeholder="e.g. View Syllabus">
+                    <!-- Secondary Button -->
+                    <div class="cta-button-group">
+                        <div class="cta-button-header">
+                            <label style="font-weight: 600; color: var(--text-title); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                <input type="checkbox" id="enable_secondary_btn" style="width: 16px; height: 16px; cursor: pointer;">
+                                Enable Secondary Button
+                            </label>
                         </div>
-                        <div class="form-group-glass">
-                            <label for="btn_secondary_link">Secondary Button Link</label>
-                            <input type="text" id="btn_secondary_link" name="btn_secondary_link" placeholder="e.g. #curriculum">
+                        <div id="secondary_btn_fields" class="cta-fields" style="display: none;">
+                            <div class="form-group-glass">
+                                <label for="btn_secondary_action">Secondary Action *</label>
+                                <select id="btn_secondary_action" name="btn_secondary_action">
+                                    <option value="">-- Select Action --</option>
+                                    <optgroup label="📞 Contact & Booking">
+                                        <option value="book_session">Book a Session</option>
+                                        <option value="whatsapp_chat">Chat on WhatsApp</option>
+                                        <option value="call_us">Call Us</option>
+                                        <option value="email_us">Email Us</option>
+                                    </optgroup>
+                                    <optgroup label="📚 Navigation">
+                                        <option value="view_courses">View Our Courses</option>
+                                        <option value="learn_more_about">Learn More About Us</option>
+                                        <option value="view_blog">Read Our Blog</option>
+                                        <option value="view_faq">View FAQs</option>
+                                    </optgroup>
+                                    <optgroup label="📖 Page Sections">
+                                        <option value="scroll_home">Go to Home</option>
+                                        <option value="scroll_about">About Us Section</option>
+                                        <option value="scroll_services">Our Services</option>
+                                        <option value="scroll_contact">Contact Section</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Stats Fields (Max 3) -->
+                    <!-- Status & Scheduling -->
                     <div class="form-grid three-cols">
-                        <div class="form-group-glass">
-                            <label for="stat_1_number">Stat 1 Value</label>
-                            <input type="text" id="stat_1_number" name="stat_1_number" placeholder="e.g. June 15 or 98%">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="stat_1_label">Stat 1 Label</label>
-                            <input type="text" id="stat_1_label" name="stat_1_label" placeholder="e.g. Start Date or Highest Score">
-                        </div>
-                    </div>
-
-                    <div class="form-grid three-cols">
-                        <div class="form-group-glass">
-                            <label for="stat_2_number">Stat 2 Value</label>
-                            <input type="text" id="stat_2_number" name="stat_2_number" placeholder="e.g. Ages 8-18">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="stat_2_label">Stat 2 Label</label>
-                            <input type="text" id="stat_2_label" name="stat_2_label" placeholder="e.g. Target Groups">
-                        </div>
-                    </div>
-
-                    <div class="form-grid three-cols">
-                        <div class="form-group-glass">
-                            <label for="stat_3_number">Stat 3 Value</label>
-                            <input type="text" id="stat_3_number" name="stat_3_number" placeholder="e.g. Hands-on">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="stat_3_label">Stat 3 Label</label>
-                            <input type="text" id="stat_3_label" name="stat_3_label" placeholder="e.g. Project Based">
-                        </div>
-                    </div>
-
-                    <!-- Floating Badge & Image -->
-                    <div class="form-grid three-cols">
-                        <div class="form-group-glass">
-                            <label for="floating_icon">Floating Icon (Emoji)</label>
-                            <input type="text" id="floating_icon" name="floating_icon" placeholder="e.g. 💻, 🏆, 🔔">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="floating_title">Floating Title</label>
-                            <input type="text" id="floating_title" name="floating_title" placeholder="e.g. Python & Web">
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="floating_desc">Floating Desc</label>
-                            <input type="text" id="floating_desc" name="floating_desc" placeholder="e.g. Weekend Workshops">
-                        </div>
-                    </div>
-
-                    <div class="form-grid three-cols">
-                        <div class="form-group-glass">
-                            <label for="glow_class">Glow & Theme Class *</label>
-                            <select id="glow_class" name="glow_class" required>
-                                <option value="glow-purple">Purple Glow</option>
-                                <option value="glow-green">Green Glow</option>
-                                <option value="glow-orange">Orange Glow</option>
-                            </select>
-                        </div>
-                        <div class="form-group-glass">
-                            <label for="sort_order">Sort/Display Order *</label>
-                            <input type="number" id="sort_order" name="sort_order" required value="0" min="0">
-                        </div>
                         <div class="form-group-glass">
                             <label for="is_active">Status *</label>
                             <select id="is_active" name="is_active" required>
@@ -821,16 +867,13 @@
                                 <option value="0">Hide (Inactive)</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="form-grid">
                         <div class="form-group-glass">
-                            <label for="start_date">Schedule Start Date & Time</label>
+                            <label for="start_date">Schedule Start</label>
                             <input type="datetime-local" id="start_date" name="start_date">
                             <p class="file-help-text">Leave blank to display immediately.</p>
                         </div>
                         <div class="form-group-glass">
-                            <label for="end_date">Schedule End Date & Time</label>
+                            <label for="end_date">Schedule End</label>
                             <input type="datetime-local" id="end_date" name="end_date">
                             <p class="file-help-text">Leave blank to display indefinitely.</p>
                         </div>
@@ -1064,6 +1107,39 @@
                     <div class="modal-actions">
                         <button type="button" class="btn btn-outline" id="blogCancelBtn">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="blogSubmitBtn">Publish Post</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Media Add/Edit Modal -->
+    <div class="modal" id="socialModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="socialModalTitle">Add Social Media Link</h3>
+                <button class="modal-close" id="socialModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="socialForm">
+                    <input type="hidden" id="socialId" name="id">
+                    <div class="form-group-glass">
+                        <label for="social_name">Platform Name *</label>
+                        <input type="text" id="social_name" name="name" required placeholder="e.g. TikTok, Instagram, X, Facebook, YouTube">
+                        <p class="file-help-text">The name is used to automatically match a branded icon on the website.</p>
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="social_url">Profile URL *</label>
+                        <input type="url" id="social_url" name="url" required placeholder="e.g. https://tiktok.com/@genius.minds.home">
+                    </div>
+                    <div class="form-group-glass">
+                        <label for="social_display_order">Display Order</label>
+                        <input type="number" id="social_display_order" name="display_order" value="0" placeholder="0">
+                        <p class="file-help-text">Lower numbers appear first. Use to control the order of icons.</p>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="socialCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="socialSubmitBtn">Save Social Link</button>
                     </div>
                 </form>
             </div>

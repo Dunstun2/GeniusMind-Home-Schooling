@@ -1,0 +1,1 @@
+Static marketing site for Genius Minds Homeschooling with landing, about, courses, blog, FAQ and contact pages plus a token-based booking tracking portal.
