@@ -389,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const qrContainer = document.getElementById('waQrContainer');
                 const qrImage = document.getElementById('waQrImage');
                 const disconnectBtn = document.getElementById('waDisconnectBtn');
+                const phoneDisplay = document.getElementById('waPhoneDisplay');
+                const phoneNumber = document.getElementById('waPhoneNumber');
 
                 if (!statusText) return; // Not on dashboard
 
@@ -399,6 +401,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusText.style.color = '#25D366';
                     qrContainer.style.display = 'none';
                     if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+
+                    // Display the connected phone number
+                    if (data.phoneNumber && phoneDisplay && phoneNumber) {
+                        phoneNumber.textContent = data.phoneNumber;
+                        phoneDisplay.style.display = 'block';
+                    }
                 } else if (data.status === 'authenticating') {
                     if (data.qrCode) {
                         statusText.textContent = 'Waiting for QR Scan...';
@@ -412,21 +420,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         shouldPollFast = true;
                     }
                     if (disconnectBtn) disconnectBtn.style.display = 'none';
+                    if (phoneDisplay) phoneDisplay.style.display = 'none';
                 } else if (data.status === 'disconnected') {
                     statusText.textContent = 'Disconnected ⚠️';
                     statusText.style.color = '#f44336';
                     qrContainer.style.display = 'none';
                     if (disconnectBtn) disconnectBtn.style.display = 'none';
+                    if (phoneDisplay) phoneDisplay.style.display = 'none';
                     shouldPollFast = true;
                 } else if (data.status === 'unavailable') {
                     statusText.textContent = 'Disabled 📵';
                     statusText.style.color = '#9ca3af';
                     qrContainer.style.display = 'none';
                     if (disconnectBtn) disconnectBtn.style.display = 'none';
+                    if (phoneDisplay) phoneDisplay.style.display = 'none';
                 } else {
                     statusText.textContent = data.status || 'Unknown';
                     statusText.style.color = '#666';
                     if (disconnectBtn) disconnectBtn.style.display = 'none';
+                    if (phoneDisplay) phoneDisplay.style.display = 'none';
                 }
 
                 if (shouldPollFast) {
@@ -1972,12 +1984,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const phoneInput = document.getElementById('setting_contact_phone');
             const emailInput = document.getElementById('setting_contact_email');
             const locationInput = document.getElementById('setting_contact_location');
-            const whatsappPhoneInput = document.getElementById('setting_whatsapp_phone');
 
             if (phoneInput) phoneInput.value = settings.contact_phone || '';
             if (emailInput) emailInput.value = settings.contact_email || '';
             if (locationInput) locationInput.value = settings.contact_location || '';
-            if (whatsappPhoneInput) whatsappPhoneInput.value = settings.whatsapp_phone || '';
         } catch (err) {
             console.error('Error loading site settings:', err);
         }
@@ -1996,8 +2006,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 contact_phone: document.getElementById('setting_contact_phone').value.trim(),
                 contact_email: document.getElementById('setting_contact_email').value.trim(),
-                contact_location: document.getElementById('setting_contact_location').value.trim(),
-                whatsapp_phone: document.getElementById('setting_whatsapp_phone').value.trim()
+                contact_location: document.getElementById('setting_contact_location').value.trim()
             };
 
             try {
@@ -2007,16 +2016,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(payload)
                 });
                 if (response.ok) {
-                    // If WhatsApp phone was saved, sync it to social media
-                    if (payload.whatsapp_phone) {
-                        try {
-                            await fetch('/api/admin/sync-whatsapp-social', { method: 'POST' });
-                            console.log('✅ WhatsApp social media link synced');
-                        } catch (syncErr) {
-                            console.error('Warning: Could not sync WhatsApp social link:', syncErr);
-                        }
-                    }
-
                     statusSpan.textContent = '✅ Saved successfully!';
                     statusSpan.style.color = '#10b981';
                     statusSpan.style.display = 'inline';

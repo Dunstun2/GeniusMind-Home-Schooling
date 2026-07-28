@@ -26,6 +26,7 @@ class WhatsAppService {
         this.status = 'disconnected'; // 'disconnected', 'authenticating', 'ready', 'error', 'unavailable'
         this.qrCodeDataUrl = null;
         this.isDisconnecting = false;
+        this.userPhoneNumber = null; // Store the connected WhatsApp phone number
 
         if (!whatsappAvailable) {
             this.status = 'unavailable';
@@ -76,6 +77,21 @@ class WhatsAppService {
                     console.log('✅ WhatsApp Client is ready!');
                     this.status = 'ready';
                     this.qrCodeDataUrl = null;
+
+                    // Extract the connected user's phone number
+                    try {
+                        if (this.client.user && this.client.user.id) {
+                            // Phone format from WhatsApp: "254743322975@c.us"
+                            const phoneWithFormat = this.client.user.id.split('@')[0];
+                            this.userPhoneNumber = phoneWithFormat;
+                            console.log(`✅ Connected WhatsApp account: ${phoneWithFormat}`);
+
+                            // Auto-sync this phone to settings and social media
+                            this.syncPhoneToSettings();
+                        }
+                    } catch (err) {
+                        console.error('Could not extract phone number from WhatsApp session:', err);
+                    }
                 }
 
                 if (connection === 'close') {
@@ -83,7 +99,7 @@ class WhatsAppService {
                     const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
                     console.warn(`⚠️ WhatsApp Client connection closed. Reason Code: ${statusCode}. Reconnecting: ${shouldReconnect}`);
-                    
+
                     this.status = 'disconnected';
                     this.qrCodeDataUrl = null;
 
@@ -120,17 +136,17 @@ class WhatsAppService {
 
     formatPhoneNumber(phone) {
         if (!phone) return null;
-        
+
         // Remove all non-numeric characters
         let cleaned = phone.replace(/\D/g, '');
-        
+
         // Handle Kenyan numbers
         if (cleaned.startsWith('0')) {
             cleaned = '254' + cleaned.substring(1);
         } else if (!cleaned.startsWith('254') && cleaned.length === 9) {
             cleaned = '254' + cleaned;
         }
-        
+
         return cleaned + '@s.whatsapp.net';
     }
 
@@ -158,6 +174,12 @@ class WhatsAppService {
         }
     }
 
+    async syncPhoneToSettings() {
+        // This method will be called from server.js to sync phone to database
+        // We'll use a global reference or event emitter
+        // For now, just store the phone - server will handle the sync via API
+    }
+
     async disconnect() {
         if (!whatsappAvailable || !this.client) return;
 
@@ -165,7 +187,7 @@ class WhatsAppService {
         this.isDisconnecting = true;
         this.status = 'disconnected';
         this.qrCodeDataUrl = null;
-        
+
         try {
             await this.client.logout();
             console.log('✅ WhatsApp Client logged out successfully.');
@@ -183,7 +205,7 @@ class WhatsAppService {
         this.cleanSessionDir();
         this.client = null;
         this.isDisconnecting = false;
-        
+
         // Reinitialize to generate a new QR code immediately
         this.initialize();
     }
@@ -191,7 +213,8 @@ class WhatsAppService {
     getStatus() {
         return {
             status: this.status,
-            qrCode: this.qrCodeDataUrl
+            qrCode: this.qrCodeDataUrl,
+            phoneNumber: this.userPhoneNumber || null
         };
     }
 }
