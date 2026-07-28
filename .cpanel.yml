@@ -1,5 +1,9 @@
 ---
 deployment:
   tasks:
-    - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
-    - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
+    - export SHELL=/bin/bash
+    - cd /home/vdranjxy/geniusminds
+    - /bin/mkdir -p tmp
+    - /bin/mkdir -p logs
+    - /bin/touch tmp/restart.txt
+    - echo "✅ Deployment completed: $(date)" >> logs/deploy.log
