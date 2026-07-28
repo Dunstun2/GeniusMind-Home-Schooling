@@ -597,9 +597,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             // Silently fail — hardcoded defaults remain visible
         }
-
-        // Poll for updates every 5 seconds (in case admin scanned new QR on dashboard)
-        setTimeout(fetchSiteSettings, 5000);
     }
     window.fetchSiteSettings = fetchSiteSettings;
 

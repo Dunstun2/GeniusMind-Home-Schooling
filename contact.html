@@ -432,6 +432,8 @@
     <script src="analytics.js"></script>
     <script src="script.js"></script>
     <script>
+        let lastWhatsAppPhone = null; // Track last phone to detect changes
+
         // Load contact settings from API and update all phone displays
         async function loadContactSettings() {
             try {
@@ -444,9 +446,20 @@
                 const contactLocation = settings.contact_location || 'Nairobi, Kenya';
                 const whatsappPhone = settings.whatsapp_phone || '254743322975'; // For WhatsApp link
 
-                console.log('📱 Loaded settings:', { contactPhone, contactEmail, contactLocation, whatsappPhone });
+                // Only log/update if WhatsApp phone changed
+                if (whatsappPhone !== lastWhatsAppPhone) {
+                    console.log('📱 WhatsApp phone updated:', whatsappPhone);
+                    lastWhatsAppPhone = whatsappPhone;
 
-                // Update phone displays
+                    // Update WhatsApp links with new phone
+                    const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
+                    console.log(`Found ${whatsappLinks.length} WhatsApp links to update`);
+                    whatsappLinks.forEach(link => {
+                        link.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
+                    });
+                }
+
+                // Update phone displays (always)
                 const phoneElements = document.querySelectorAll('#display-phone, #display-phone-q');
                 phoneElements.forEach(el => {
                     const linkEl = el.closest('a') || el;
@@ -470,18 +483,25 @@
                 const locationEl = document.getElementById('display-location');
                 if (locationEl) locationEl.textContent = contactLocation;
 
-                // Update WhatsApp links with extracted phone number
-                const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
-                console.log(`Found ${whatsappLinks.length} WhatsApp links to update`);
-                whatsappLinks.forEach(link => {
-                    const oldHref = link.href;
-                    link.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
-                    console.log(`Updated WhatsApp link: ${oldHref} → ${link.href}`);
-                });
-
             } catch (err) {
                 console.error('Error loading contact settings:', err);
                 // Fallback to defaults if API fails
+            }
+        }
+
+        // Monitor WhatsApp connection status and update when it changes
+        async function monitorWhatsAppStatus() {
+            try {
+                const response = await fetch('/api/admin/whatsapp/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Reload settings only when WhatsApp status is "ready" (connection established)
+                    if (data.status === 'ready' && data.phoneNumber) {
+                        loadContactSettings();
+                    }
+                }
+            } catch (err) {
+                // Silently fail - this is optional monitoring
             }
         }
 
@@ -497,11 +517,12 @@
                 else if (note) msgEl.value = note;
             }
 
-            // Load contact settings
+            // Load contact settings on page load
             loadContactSettings();
 
-            // Poll for updates every 5 seconds (in case admin scanned new QR)
-            setInterval(loadContactSettings, 5000);
+            // Monitor WhatsApp status only (when ready, refetch settings)
+            // This fires when admin scans QR code
+            setInterval(monitorWhatsAppStatus, 3000);
         });
     </script>
 </body>
