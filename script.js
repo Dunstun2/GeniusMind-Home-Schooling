@@ -798,10 +798,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="container hero-container">
                             <div class="hero-content">
                                 <div class="hero-header-row" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 1.5rem;">
-                                    <div class="badge ${banner.badge_class}">${banner.badge_text}</div>
+                                    <div class="badge ${banner.badge_class}" style="display: flex; align-items: center; height: 36px; padding: 0 16px;">${banner.badge_text}</div>
                                     ${banner.event_start_date && banner.event_end_date ? `
-                                    <div class="hero-event-dates" style="padding: 8px 14px; background: rgba(255,255,255,0.08); border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); font-size: 12px; color: #cbd5e1; white-space: nowrap;">
-                                        📅 <strong>${new Date(banner.event_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(banner.event_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                                    <div class="hero-event-dates" style="display: flex; align-items: center; height: 36px; padding: 0 14px; background: rgba(255,255,255,0.08); border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); font-size: 12px; color: #cbd5e1; white-space: nowrap;">
+                                        📅 <strong style="margin-left: 6px;">${new Date(banner.event_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(banner.event_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
                                     </div>
                                     ` : ''}
                                 </div>

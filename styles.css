@@ -407,15 +407,17 @@ section {
 }
 
 .badge {
-    display: inline-block;
-    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 1rem;
     background-color: rgba(79, 70, 229, 0.1);
     color: var(--primary);
     border-radius: 999px;
     font-weight: 600;
     font-size: 0.875rem;
-    margin-bottom: 1.5rem;
     border: 1px solid rgba(79, 70, 229, 0.2);
+    white-space: nowrap;
 }
 
 .hero-title {
@@ -432,10 +434,13 @@ section {
 }
 
 .hero-event-dates {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 14px;
     white-space: nowrap;
-    overflow: auto;
-    display: inline-block;
-    font-size: clamp(12px, 2vw, 14px);
+    font-size: 12px;
+    border-radius: 8px;
 }
 
 .hero-header-row {
