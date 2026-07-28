@@ -432,6 +432,54 @@
     <script src="analytics.js"></script>
     <script src="script.js"></script>
     <script>
+        // Load contact settings from API and update all phone displays
+        async function loadContactSettings() {
+            try {
+                const response = await fetch('/api/admin/settings');
+                if (!response.ok) throw new Error('Failed to fetch settings');
+                const settings = await response.json();
+
+                const contactPhone = settings.contact_phone || '+254 743-322-975';
+                const contactEmail = settings.contact_email || 'geniusminds2425@gmail.com';
+                const contactLocation = settings.contact_location || 'Nairobi, Kenya';
+                const whatsappPhone = settings.whatsapp_phone || '254743322975'; // For WhatsApp link
+
+                // Update phone displays
+                const phoneElements = document.querySelectorAll('#display-phone, #display-phone-q');
+                phoneElements.forEach(el => {
+                    const linkEl = el.closest('a') || el;
+                    el.textContent = contactPhone;
+                    if (linkEl.href && linkEl.href.includes('tel:')) {
+                        linkEl.href = `tel:${contactPhone.replace(/\D/g, '')}`;
+                    }
+                });
+
+                // Update email displays
+                const emailElements = document.querySelectorAll('#display-email, #display-email-q');
+                emailElements.forEach(el => {
+                    const linkEl = el.closest('a') || el;
+                    el.textContent = contactEmail;
+                    if (linkEl.href && linkEl.href.includes('mailto:')) {
+                        linkEl.href = `mailto:${contactEmail}`;
+                    }
+                });
+
+                // Update location display
+                const locationEl = document.getElementById('display-location');
+                if (locationEl) locationEl.textContent = contactLocation;
+
+                // Update WhatsApp links with extracted phone number
+                const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
+                whatsappLinks.forEach(link => {
+                    link.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
+                });
+
+            } catch (err) {
+                console.error('Error loading contact settings:', err);
+                // Fallback to defaults if API fails
+            }
+        }
+
         // Pre-fill the message if coming from a course or blog link with query params
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
@@ -443,6 +491,9 @@
                 if (program) msgEl.value = `I am interested in enrolling my child in the "${program}" programme.`;
                 else if (note) msgEl.value = note;
             }
+
+            // Load contact settings
+            loadContactSettings();
         });
     </script>
 </body>

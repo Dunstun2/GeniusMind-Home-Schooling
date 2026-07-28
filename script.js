@@ -585,6 +585,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (locationEl && settings.contact_location) {
                 locationEl.textContent = settings.contact_location;
             }
+
+            // WhatsApp Phone (for links and display)
+            if (settings.whatsapp_phone) {
+                // Update all WhatsApp links with extracted phone
+                const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
+                whatsappLinks.forEach(link => {
+                    link.href = `https://wa.me/${settings.whatsapp_phone}?text=Hello%20Genius%20Minds`;
+                });
+            }
         } catch (err) {
             // Silently fail — hardcoded defaults remain visible
         }
