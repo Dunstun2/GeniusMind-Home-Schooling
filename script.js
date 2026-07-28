@@ -564,12 +564,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!response.ok) return;
             const settings = await response.json();
 
-            // Phone
+            // Helper function to format phone number for display
+            function formatPhoneForDisplay(phone) {
+                if (!phone) return '+254 743-322-975'; // fallback
+                // Remove non-digits
+                let cleaned = phone.replace(/\D/g, '');
+                // Format as +254 XXX-XXX-XXX
+                if (cleaned.startsWith('254')) {
+                    cleaned = cleaned.slice(3); // Remove 254 prefix
+                }
+                return `+254 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+            }
+
+            // Use WhatsApp phone as the SINGLE SOURCE OF TRUTH for ALL phone displays
+            const adminPhone = settings.whatsapp_phone || settings.contact_phone || '254743322975';
+            const formattedPhone = formatPhoneForDisplay(adminPhone);
+
+            console.log('🔧 script.js fetchSiteSettings() - Admin phone:', adminPhone, 'Formatted:', formattedPhone);
+
+            // Phone - use WhatsApp phone as source of truth
             const phoneEl = document.getElementById('display-phone');
             const phoneLink = document.getElementById('contact-phone-link');
-            if (phoneEl && settings.contact_phone) {
-                phoneEl.textContent = settings.contact_phone;
-                if (phoneLink) phoneLink.href = 'tel:' + settings.contact_phone.replace(/[\s\-]/g, '');
+            if (phoneEl) {
+                console.log(`  Updating #display-phone: "${phoneEl.textContent}" → "${formattedPhone}"`);
+                phoneEl.textContent = formattedPhone;
+                if (phoneLink) {
+                    const cleanPhone = adminPhone.replace(/\D/g, '');
+                    phoneLink.href = 'tel:+' + cleanPhone;
+                    console.log(`  Updated tel link to: ${phoneLink.href}`);
+                }
             }
 
             // Email
@@ -586,15 +609,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 locationEl.textContent = settings.contact_location;
             }
 
-            // WhatsApp Phone (for links and display)
-            if (settings.whatsapp_phone) {
+            // WhatsApp Phone - update all WhatsApp links
+            if (adminPhone) {
                 // Update all WhatsApp links with extracted phone
                 const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
-                whatsappLinks.forEach(link => {
-                    link.href = `https://wa.me/${settings.whatsapp_phone}?text=Hello%20Genius%20Minds`;
+                console.log(`  Updating ${whatsappLinks.length} WhatsApp links to: wa.me/${adminPhone}`);
+                whatsappLinks.forEach((link, idx) => {
+                    link.href = `https://wa.me/${adminPhone}?text=Hello%20Genius%20Minds`;
+                    console.log(`    [${idx}] ${link.href}`);
                 });
             }
+
+            // Update WhatsApp phone display text elements
+            const whatsappNumberDisplay = document.getElementById('display-whatsapp-number');
+            const whatsappQuickDisplay = document.getElementById('display-whatsapp-q');
+
+            if (whatsappNumberDisplay) {
+                console.log(`  Updating #display-whatsapp-number: "${whatsappNumberDisplay.textContent}" → "${formattedPhone}"`);
+                whatsappNumberDisplay.textContent = formattedPhone;
+            }
+            if (whatsappQuickDisplay) {
+                console.log(`  Updating #display-whatsapp-q: "${whatsappQuickDisplay.textContent}" → "${formattedPhone}"`);
+                whatsappQuickDisplay.textContent = formattedPhone;
+            }
         } catch (err) {
+            console.error('Error in fetchSiteSettings:', err);
             // Silently fail — hardcoded defaults remain visible
         }
     }

@@ -81,8 +81,10 @@ class WhatsAppService {
                     // Extract the connected user's phone number
                     try {
                         if (this.client.user && this.client.user.id) {
-                            // Phone format from WhatsApp: "254743322975@c.us"
-                            const phoneWithFormat = this.client.user.id.split('@')[0];
+                            // Phone format from WhatsApp: "254743322975@c.us" or "254743322975:17@s.whatsapp.net"
+                            // Remove device ID (:17, :123, etc) and domain (@c.us, @s.whatsapp.net)
+                            let phoneWithFormat = this.client.user.id.split('@')[0]; // Remove domain
+                            phoneWithFormat = phoneWithFormat.split(':')[0]; // Remove device ID if present
                             this.userPhoneNumber = phoneWithFormat;
                             console.log(`✅ Connected WhatsApp account: ${phoneWithFormat}`);
 

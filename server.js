@@ -2295,57 +2295,84 @@ app.get('/api/admin/whatsapp/status', requireAdmin, async (req, res) => {
     try {
         const status = whatsappService.getStatus();
 
-        // If WhatsApp just became ready and has a phone number, auto-sync it
+        // If WhatsApp just became ready and has a phone number, auto-sync it (ONLY ONCE)
+        // Check if we've already saved this phone to avoid repeated saves
         if (status.status === 'ready' && status.phoneNumber) {
             try {
-                // Save phone to settings
-                const phoneNumber = status.phoneNumber;
-                if (dbMode === 'memory') {
-                    const existing = memDb.site_settings.find(s => s.setting_key === 'whatsapp_phone');
-                    if (existing) {
-                        existing.setting_value = phoneNumber;
-                    } else {
-                        memDb.site_settings.push({ setting_key: 'whatsapp_phone', setting_value: phoneNumber });
+                // Get the current saved phone
+                const existingSettings = await db.query('SELECT setting_value FROM site_settings WHERE setting_key = ?', ['whatsapp_phone']);
+                const savedPhone = existingSettings.length > 0 ? existingSettings[0].setting_value : null;
+
+                // Only save if it's different (prevents repeated saves)
+                if (savedPhone !== status.phoneNumber) {
+                    console.log(`🔄 WhatsApp phone changed: ${savedPhone} → ${status.phoneNumber}. Syncing...`);
+
+                    const phoneNumber = status.phoneNumber;
+                    if (dbMode === 'memory') {
+                        const existing = memDb.site_settings.find(s => s.setting_key === 'whatsapp_phone');
+                        if (existing) {
+                            existing.setting_value = phoneNumber;
+                        } else {
+                            memDb.site_settings.push({ setting_key: 'whatsapp_phone', setting_value: phoneNumber });
+                        }
+                    } else if (dbMode === 'mysql') {
+                        await dbPool.query(
+                            'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                            ['whatsapp_phone', phoneNumber, phoneNumber]
+                        );
+                    } else if (dbMode === 'sqlite') {
+                        await dbConnection.run(
+                            'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = ?',
+                            ['whatsapp_phone', phoneNumber, phoneNumber]
+                        );
                     }
-                } else if (dbMode === 'mysql') {
-                    await dbPool.query(
-                        'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
-                        ['whatsapp_phone', phoneNumber, phoneNumber]
-                    );
-                } else if (dbMode === 'sqlite') {
-                    await dbConnection.run(
-                        'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = ?',
-                        ['whatsapp_phone', phoneNumber, phoneNumber]
-                    );
-                }
-                console.log(`✅ Auto-saved WhatsApp phone to settings: ${phoneNumber}`);
+                    console.log(`✅ Auto-saved WhatsApp phone to settings: ${phoneNumber}`);
 
-                // Auto-sync to social media
-                const whatsappUrl = `https://wa.me/${phoneNumber}?text=Hello%20Genius%20Minds`;
-                const existing = await db.query('SELECT * FROM social_media WHERE name = ?', ['WhatsApp']);
+                    // Auto-sync to social media
+                    const whatsappUrl = `https://wa.me/${phoneNumber}?text=Hello%20Genius%20Minds`;
+                    const socialExisting = await db.query('SELECT * FROM social_media WHERE name = ?', ['WhatsApp']);
 
-                if (existing.length > 0) {
-                    await db.query('UPDATE social_media SET url = ? WHERE name = ?', [whatsappUrl, 'WhatsApp']);
+                    if (socialExisting.length > 0) {
+                        await db.query('UPDATE social_media SET url = ? WHERE name = ?', [whatsappUrl, 'WhatsApp']);
+                    } else {
+                        const maxOrder = await db.query('SELECT MAX(display_order) as max_order FROM social_media');
+                        const nextOrder = (maxOrder[0]?.max_order || 0) + 1;
+                        await db.query(
+                            'INSERT INTO social_media (name, url, display_order) VALUES (?, ?, ?)',
+                            ['WhatsApp', whatsappUrl, nextOrder]
+                        );
+                    }
+                    console.log(`✅ Auto-created/updated WhatsApp social media link`);
                 } else {
-                    const maxOrder = await db.query('SELECT MAX(display_order) as max_order FROM social_media');
-                    const nextOrder = (maxOrder[0]?.max_order || 0) + 1;
-                    await db.query(
-                        'INSERT INTO social_media (name, url, display_order) VALUES (?, ?, ?)',
-                        ['WhatsApp', whatsappUrl, nextOrder]
-                    );
+                    // Phone hasn't changed, skip update
+                    console.log(`ℹ️ WhatsApp phone unchanged: ${status.phoneNumber} (skipping update)`);
                 }
-                console.log(`✅ Auto-created/updated WhatsApp social media link`);
             } catch (syncErr) {
-                console.error('Warning: Could not auto-sync WhatsApp phone:', syncErr);
-                // Don't fail the status request - still return status
+                console.error('Error syncing WhatsApp phone:', syncErr);
             }
         }
 
         res.json(status);
     } catch (err) {
         console.error('Error getting WhatsApp status:', err);
-        res.status(500).json({ error: 'Failed to get WhatsApp status.' });
+        res.status(500).json({ error: 'Failed to get WhatsApp status' });
     }
+});
+['WhatsApp', whatsappUrl, nextOrder]
+                    );
+                }
+console.log(`✅ Auto-created/updated WhatsApp social media link`);
+            } catch (syncErr) {
+    console.error('Warning: Could not auto-sync WhatsApp phone:', syncErr);
+    // Don't fail the status request - still return status
+}
+        }
+
+res.json(status);
+    } catch (err) {
+    console.error('Error getting WhatsApp status:', err);
+    res.status(500).json({ error: 'Failed to get WhatsApp status.' });
+}
 });
 
 // Disconnect WhatsApp
@@ -2588,10 +2615,9 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     }
 });
 
-// WhatsApp Status API
-app.get('/api/admin/whatsapp/status', requireAdmin, (req, res) => {
-    res.json(whatsappService.getStatus());
-});
+// ==========================================
+// END OF API ENDPOINTS
+// ==========================================
 
 // WhatsApp Disconnect API
 app.post('/api/admin/whatsapp/disconnect', requireAdmin, async (req, res) => {

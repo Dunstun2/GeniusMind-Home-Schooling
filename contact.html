@@ -269,7 +269,7 @@
                 <a href="https://wa.me/254743322975" target="_blank" rel="noopener noreferrer" class="quick-card">
                     <div class="qc-icon">💬</div>
                     <h4>WhatsApp</h4>
-                    <p>Chat with us directly on WhatsApp</p>
+                    <p id="display-whatsapp-q">+254 107-289-949</p>
                 </a>
             </div>
         </div>
@@ -314,7 +314,7 @@
                             <div class="cd-icon">💬</div>
                             <div class="cd-info">
                                 <span>WhatsApp</span>
-                                <strong><a href="https://wa.me/254743322975" target="_blank" rel="noopener">Chat on WhatsApp →</a></strong>
+                                <strong><a href="https://wa.me/254743322975" target="_blank" rel="noopener" id="whatsapp-link">Chat on WhatsApp →</a></strong>
                             </div>
                         </div>
 
@@ -433,58 +433,128 @@
     <script src="script.js"></script>
     <script>
         let lastWhatsAppPhone = null; // Track last phone to detect changes
+        let lastWhatsAppStatus = null; // Track last status to know when it changes
+
+        // Helper function to format phone number for display
+        function formatPhoneForDisplay(phone) {
+            if (!phone) return '+254 743-322-975'; // fallback
+            // Remove non-digits
+            let cleaned = phone.replace(/\D/g, '');
+            // Format as +254 XXX-XXX-XXX
+            if (cleaned.startsWith('254')) {
+                cleaned = cleaned.slice(3); // Remove 254 prefix
+            }
+            return `+254 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+        }
 
         // Load contact settings from API and update all phone displays
         async function loadContactSettings() {
             try {
+                console.log('🔄 Fetching contact settings from /api/settings...');
                 const response = await fetch('/api/settings');
                 if (!response.ok) throw new Error('Failed to fetch settings');
                 const settings = await response.json();
 
-                const contactPhone = settings.contact_phone || '+254 743-322-975';
+                console.log('📋 Settings received:', settings);
+
                 const contactEmail = settings.contact_email || 'geniusminds2425@gmail.com';
                 const contactLocation = settings.contact_location || 'Nairobi, Kenya';
-                const whatsappPhone = settings.whatsapp_phone || '254743322975'; // For WhatsApp link
+                const whatsappPhone = settings.whatsapp_phone || '254743322975'; // Single source of truth for phone
 
-                // Only log/update if WhatsApp phone changed
-                if (whatsappPhone !== lastWhatsAppPhone) {
-                    console.log('📱 WhatsApp phone updated:', whatsappPhone);
+                console.log('📱 WhatsApp phone from settings:', whatsappPhone);
+                console.log('📱 Last stored WhatsApp phone:', lastWhatsAppPhone);
+
+                // Update WhatsApp links if phone exists and is different from last
+                if (whatsappPhone && whatsappPhone !== lastWhatsAppPhone) {
+                    console.log('✅ WhatsApp phone CHANGED! Updating ALL phone references from:', lastWhatsAppPhone, '→', whatsappPhone);
                     lastWhatsAppPhone = whatsappPhone;
 
-                    // Update WhatsApp links with new phone
+                    // Format phone for display (e.g., "+254 107-289-949")
+                    const formattedPhone = formatPhoneForDisplay(whatsappPhone);
+                    console.log('📱 Formatted phone for display:', formattedPhone);
+
+                    // ============================================
+                    // UPDATE ALL PHONE REFERENCES EVERYWHERE
+                    // ============================================
+
+                    // 1. Update WhatsApp links (wa.me)
                     const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
-                    console.log(`Found ${whatsappLinks.length} WhatsApp links to update`);
-                    whatsappLinks.forEach(link => {
+                    console.log(`🔗 Found ${whatsappLinks.length} WhatsApp links to update`);
+                    whatsappLinks.forEach((link, idx) => {
+                        const oldHref = link.href;
                         link.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
+                        console.log(`  [${idx}] Updated WhatsApp link: ${oldHref} → ${link.href}`);
                     });
+
+                    // 2. Update Phone display elements (Call Us, etc.)
+                    const phoneElements = document.querySelectorAll('#display-phone, #display-phone-q');
+                    console.log(`📞 Found ${phoneElements.length} phone display elements (#display-phone, #display-phone-q)`);
+                    phoneElements.forEach((el, idx) => {
+                        console.log(`  [${idx}] Element ID: ${el.id}, Current text: "${el.textContent}"`);
+                        el.textContent = formattedPhone;
+                        console.log(`  [${idx}] Updated to: "${el.textContent}"`);
+                        const linkEl = el.closest('a');
+                        if (linkEl) {
+                            console.log(`  [${idx}] Has parent link, href: ${linkEl.href}`);
+                            if (linkEl.href.includes('tel:')) {
+                                const cleanPhone = whatsappPhone.replace(/\D/g, '');
+                                linkEl.href = `tel:+${cleanPhone}`;
+                                console.log(`  [${idx}] Updated tel link to: ${linkEl.href}`);
+                            }
+                        }
+                    });
+
+                    // 3. Update WhatsApp phone display (contact card)
+                    console.log('💬 [contact.html] Updating WhatsApp phone display elements');
+                    
+                    // Update WhatsApp link href to use new phone (but don't show it in text)
+                    const whatsappLink = document.getElementById('whatsapp-link');
+                    if (whatsappLink) {
+                        console.log(`  whatsapp-link element: FOUND`);
+                        console.log(`    Current href: "${whatsappLink.href}"`);
+                        // Update ONLY the href, keep text as "Chat on WhatsApp →"
+                        whatsappLink.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
+                        whatsappLink.innerHTML = 'Chat on WhatsApp →';
+                        console.log(`    Updated href to: "${whatsappLink.href}"`);
+                        console.log(`    Link text remains: "${whatsappLink.innerText}"`);
+                    }
+
+                    const whatsappQuickDisplay = document.getElementById('display-whatsapp-q');
+                    
+                    console.log(`  display-whatsapp-q element (quick card): ${whatsappQuickDisplay ? 'FOUND' : 'NOT FOUND'}`);
+                    if (whatsappQuickDisplay) {
+                        console.log(`    Updating quick card WhatsApp phone display to: ${formattedPhone}`);
+                        whatsappQuickDisplay.textContent = formattedPhone;
+                        console.log(`    Updated to: "${whatsappQuickDisplay.textContent}"`);
+                    }
+                } else if (whatsappPhone === lastWhatsAppPhone) {
+                    console.log('ℹ️ WhatsApp phone unchanged, skipping update');
                 }
 
-                // Update phone displays (always)
-                const phoneElements = document.querySelectorAll('#display-phone, #display-phone-q');
-                phoneElements.forEach(el => {
-                    const linkEl = el.closest('a') || el;
-                    el.textContent = contactPhone;
-                    if (linkEl.href && linkEl.href.includes('tel:')) {
-                        linkEl.href = `tel:${contactPhone.replace(/\D/g, '')}`;
-                    }
-                });
-
                 // Update email displays
+                console.log('📧 Updating email display elements');
                 const emailElements = document.querySelectorAll('#display-email, #display-email-q');
-                emailElements.forEach(el => {
-                    const linkEl = el.closest('a') || el;
+                console.log(`  Found ${emailElements.length} email elements`);
+                emailElements.forEach((el, idx) => {
+                    console.log(`  [${idx}] Updating email to: ${contactEmail}`);
                     el.textContent = contactEmail;
-                    if (linkEl.href && linkEl.href.includes('mailto:')) {
+                    const linkEl = el.closest('a');
+                    if (linkEl && linkEl.href.includes('mailto:')) {
                         linkEl.href = `mailto:${contactEmail}`;
                     }
                 });
 
                 // Update location display
+                console.log('📍 Updating location display');
                 const locationEl = document.getElementById('display-location');
-                if (locationEl) locationEl.textContent = contactLocation;
+                console.log(`  display-location element: ${locationEl ? 'FOUND' : 'NOT FOUND'}`);
+                if (locationEl) {
+                    console.log(`    Updating location to: ${contactLocation}`);
+                    locationEl.textContent = contactLocation;
+                }
 
             } catch (err) {
-                console.error('Error loading contact settings:', err);
+                console.error('❌ Error loading contact settings:', err);
                 // Fallback to defaults if API fails
             }
         }
@@ -495,9 +565,16 @@
                 const response = await fetch('/api/admin/whatsapp/status');
                 if (response.ok) {
                     const data = await response.json();
-                    // Reload settings only when WhatsApp status is "ready" (connection established)
-                    if (data.status === 'ready' && data.phoneNumber) {
+                    console.log('📡 WhatsApp status check:', { status: data.status, phoneNumber: data.phoneNumber, lastStatus: lastWhatsAppStatus });
+
+                    // Reload settings if status changed to "ready"
+                    if (data.status === 'ready' && data.status !== lastWhatsAppStatus) {
+                        console.log('🎯 WhatsApp status changed to READY! Fetching new settings...');
+                        lastWhatsAppStatus = data.status;
                         loadContactSettings();
+                    } else if (data.status !== 'ready' && data.status !== lastWhatsAppStatus) {
+                        lastWhatsAppStatus = data.status;
+                        console.log('📡 WhatsApp status:', data.status);
                     }
                 }
             } catch (err) {
@@ -518,10 +595,13 @@
             }
 
             // Load contact settings on page load
-            loadContactSettings();
+            console.log('🚀 Contact page loaded. Fetching initial settings...');
+            // Give script.js a moment to run, then override with our settings
+            setTimeout(() => {
+                loadContactSettings();
+            }, 500);
 
-            // Monitor WhatsApp status only (when ready, refetch settings)
-            // This fires when admin scans QR code
+            // Monitor WhatsApp status every 3 seconds (when admin scans QR code)
             setInterval(monitorWhatsAppStatus, 3000);
         });
     </script>

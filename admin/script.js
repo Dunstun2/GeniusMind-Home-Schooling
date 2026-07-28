@@ -1985,7 +1985,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const emailInput = document.getElementById('setting_contact_email');
             const locationInput = document.getElementById('setting_contact_location');
 
-            if (phoneInput) phoneInput.value = settings.contact_phone || '';
+            // Use WhatsApp phone as the single source of truth
+            // Display it in the phone field (locked/readonly)
+            if (phoneInput) {
+                const whatsappPhone = settings.whatsapp_phone || settings.contact_phone || '';
+                // Format phone for display
+                let displayPhone = whatsappPhone;
+                if (whatsappPhone && whatsappPhone.replace) {
+                    const cleaned = whatsappPhone.replace(/\D/g, '');
+                    if (cleaned.length >= 9) {
+                        const prefix = cleaned.startsWith('254') ? cleaned.slice(3) : cleaned;
+                        displayPhone = '+254 ' + prefix.slice(0, 3) + '-' + prefix.slice(3, 6) + '-' + prefix.slice(6);
+                    }
+                }
+                phoneInput.value = displayPhone;
+                console.log('🔒 [Admin Settings] WhatsApp phone loaded (readonly):', displayPhone);
+            }
+
             if (emailInput) emailInput.value = settings.contact_email || '';
             if (locationInput) locationInput.value = settings.contact_location || '';
         } catch (err) {
@@ -2003,8 +2019,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBtn.textContent = 'Saving...';
             statusSpan.style.display = 'none';
 
+            // Don't send contact_phone - it's locked and auto-synced from WhatsApp
+            // Only save email and location
             const payload = {
-                contact_phone: document.getElementById('setting_contact_phone').value.trim(),
                 contact_email: document.getElementById('setting_contact_email').value.trim(),
                 contact_location: document.getElementById('setting_contact_location').value.trim()
             };

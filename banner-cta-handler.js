@@ -3,6 +3,27 @@
  * Handles predefined call-to-action button clicks based on actual pages and features
  */
 
+// Store dynamic phone globally
+let GLOBAL_ADMIN_PHONE = '254743322975'; // Fallback
+
+// Load dynamic phone from settings
+async function loadAdminPhone() {
+    try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            const whatsappPhone = settings.whatsapp_phone || settings.contact_phone || '254743322975';
+            GLOBAL_ADMIN_PHONE = whatsappPhone;
+            console.log('📱 [BannerCTA] Admin phone loaded:', GLOBAL_ADMIN_PHONE);
+        }
+    } catch (err) {
+        console.error('Error loading admin phone for CTA:', err);
+    }
+}
+
+// Load phone immediately
+loadAdminPhone();
+
 // CTA Action Map - Only includes actions that exist in your system
 const CTA_ACTIONS = {
     // Contact & Booking - All lead to booking form
@@ -16,7 +37,10 @@ const CTA_ACTIONS = {
     },
     'call_us': {
         text: 'Call Us',
-        handler: () => window.location.href = 'tel:+254743322975'
+        handler: () => {
+            const cleanPhone = GLOBAL_ADMIN_PHONE.replace(/\D/g, '');
+            window.location.href = `tel:+${cleanPhone}`;
+        }
     },
     'email_us': {
         text: 'Email Us',
@@ -85,9 +109,8 @@ function scrollToElement(selector) {
  * Open WhatsApp chat with pre-filled message
  */
 function openWhatsApp() {
-    const phone = '254743322975'; // Kenya format without +
     const message = encodeURIComponent('Hello! I would like to inquire about your homeschooling programs.');
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${GLOBAL_ADMIN_PHONE}?text=${message}`, '_blank');
 }
 
 /**

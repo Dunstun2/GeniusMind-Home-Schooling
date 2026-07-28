@@ -157,7 +157,7 @@
                 <p style="color:var(--text-muted); max-width:460px; margin:0 auto 2rem;">Our friendly team is happy to answer anything not covered above. Reach out directly!</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
                     <a href="contact.html" class="btn btn-primary">Contact Us</a>
-                    <a href="tel:+254743322975" class="btn btn-outline">📞 Call Us Now</a>
+                    <a href="tel:" id="faq-call-link" class="btn btn-outline">📞 Call Us Now</a>
                 </div>
             </div>
         </div>
@@ -182,11 +182,34 @@
     <script src="analytics.js"></script>
     <script src="script.js"></script>
     <script>
+        // Load dynamic phone from settings
+        async function loadFaqPhoneLink() {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    const whatsappPhone = settings.whatsapp_phone || settings.contact_phone || '254743322975';
+                    const callLink = document.getElementById('faq-call-link');
+                    if (callLink) {
+                        // Format phone for tel: link
+                        const cleanPhone = whatsappPhone.replace(/\D/g, '');
+                        callLink.href = `tel:+${cleanPhone}`;
+                        console.log('📱 [FAQ] Call link updated to:', callLink.href);
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading FAQ phone link:', err);
+            }
+        }
+
         // Client-side FAQ search filter (runs after dynamic FAQs are loaded)
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('faq-search');
             const noResults = document.getElementById('faq-no-results');
             if (!searchInput) return;
+
+            // Load phone link
+            loadFaqPhoneLink();
 
             searchInput.addEventListener('input', () => {
                 const q = searchInput.value.trim().toLowerCase();
