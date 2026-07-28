@@ -1,4 +1,5 @@
 ---
 deployment:
   tasks:
-    - /bin/true
+    - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
+    - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
