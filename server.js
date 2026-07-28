@@ -128,8 +128,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: 'strict',
+        secure: false, // Allow both HTTP and HTTPS for cPanel compatibility
+        sameSite: 'lax', // More permissive than 'strict'
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
 }));
@@ -143,6 +143,7 @@ app.use((req, res, next) => {
 
         // If inactive for longer than INACTIVITY_TIMEOUT, logout
         if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+            console.log(`Admin session expired due to inactivity: ${timeSinceLastActivity}ms > ${INACTIVITY_TIMEOUT}ms`);
             req.session.destroy((err) => {
                 if (err) console.error('Session destruction error:', err);
             });
@@ -1857,6 +1858,7 @@ app.post('/api/admin/login', async (req, res) => {
 
         req.session.isAdmin = true;
         req.session.username = username;
+        req.session.lastActivity = Date.now(); // Initialize lastActivity on login
         res.json({ success: true });
     } catch (err) {
         console.error('Admin login error:', err);
