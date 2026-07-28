@@ -2,6 +2,4 @@
 deployment:
   tasks:
     - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
-    - /bin/mkdir -p /home/vdranjxy/geniusminds/logs
-    - /bin/npm install --production
     - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
