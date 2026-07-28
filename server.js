@@ -2668,13 +2668,13 @@ app.post('/api/admin/banners', requireAdmin, upload.single('image'), async (req,
 
         const result = await db.query(`
             INSERT INTO highlights_banners
-                (badge_text, badge_class, title, subtitle,
+                (banner_type, badge_text, badge_class, title, subtitle,
                  btn_primary_text, btn_primary_link, btn_secondary_text, btn_secondary_link,
                  stat_1_number, stat_1_label, stat_2_number, stat_2_label, stat_3_number, stat_3_label,
                  image_path, floating_icon, floating_title, floating_desc, glow_class,
                  sort_order, is_active, start_date, end_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [badge_text, badge_class || 'event-badge', title, subtitle,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ['standard', badge_text, badge_class || 'event-badge', title, subtitle,
                 btn_primary_text || null, btn_primary_link || null, btn_secondary_text || null, btn_secondary_link || null,
                 stat_1_number || null, stat_1_label || null, stat_2_number || null, stat_2_label || null, stat_3_number || null, stat_3_label || null,
                 imagePath, floating_icon || null, floating_title || null, floating_desc || null, glow_class || 'glow-green',
@@ -2709,13 +2709,13 @@ app.put('/api/admin/banners/:id', requireAdmin, upload.single('image'), async (r
 
         await db.query(`
             UPDATE highlights_banners SET
-                badge_text = ?, badge_class = ?, title = ?, subtitle = ?,
+                banner_type = ?, badge_text = ?, badge_class = ?, title = ?, subtitle = ?,
                 btn_primary_text = ?, btn_primary_link = ?, btn_secondary_text = ?, btn_secondary_link = ?,
                 stat_1_number = ?, stat_1_label = ?, stat_2_number = ?, stat_2_label = ?, stat_3_number = ?, stat_3_label = ?,
                 image_path = ?, floating_icon = ?, floating_title = ?, floating_desc = ?, glow_class = ?,
                 sort_order = ?, is_active = ?, start_date = ?, end_date = ?
             WHERE id = ?`,
-            [badge_text, badge_class || 'event-badge', title, subtitle,
+            ['standard', badge_text, badge_class || 'event-badge', title, subtitle,
                 btn_primary_text || null, btn_primary_link || null, btn_secondary_text || null, btn_secondary_link || null,
                 stat_1_number || null, stat_1_label || null, stat_2_number || null, stat_2_label || null, stat_3_number || null, stat_3_label || null,
                 imagePath, floating_icon || null, floating_title || null, floating_desc || null, glow_class || 'glow-green',
