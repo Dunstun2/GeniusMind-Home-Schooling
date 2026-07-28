@@ -2358,22 +2358,6 @@ app.get('/api/admin/whatsapp/status', requireAdmin, async (req, res) => {
         res.status(500).json({ error: 'Failed to get WhatsApp status' });
     }
 });
-['WhatsApp', whatsappUrl, nextOrder]
-                    );
-                }
-console.log(`✅ Auto-created/updated WhatsApp social media link`);
-            } catch (syncErr) {
-    console.error('Warning: Could not auto-sync WhatsApp phone:', syncErr);
-    // Don't fail the status request - still return status
-}
-        }
-
-res.json(status);
-    } catch (err) {
-    console.error('Error getting WhatsApp status:', err);
-    res.status(500).json({ error: 'Failed to get WhatsApp status.' });
-}
-});
 
 // Disconnect WhatsApp
 app.post('/api/admin/whatsapp/disconnect', requireAdmin, async (req, res) => {
