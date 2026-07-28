@@ -1,5 +1,26 @@
 // Admin Dashboard Client Logic
 document.addEventListener('DOMContentLoaded', () => {
+    // ==========================================
+    // Global API Error Handler (401 Session Expiry)
+    // ==========================================
+    const originalFetch = window.fetch;
+    window.fetch = function (...args) {
+        return originalFetch.apply(this, args)
+            .then(response => {
+                // If we get a 401, the session has expired
+                if (response.status === 401) {
+                    console.warn('Session expired due to inactivity');
+                    alert('Your session has expired due to inactivity. Please login again.');
+                    window.location.href = '/admin/login.html';
+                }
+                return response;
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                throw error;
+            });
+    };
+
     // Theme Toggle Functionality
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.querySelector('.theme-icon');
@@ -25,6 +46,25 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('adminTheme', isLight ? 'light' : 'dark');
         });
     }
+
+    // ==========================================
+    // Periodic Session Activity Refresh
+    // ==========================================
+    // Every 5 minutes, make a lightweight check-session request to refresh activity
+    setInterval(() => {
+        fetch('/api/admin/check-session')
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    console.log('✓ Session activity refreshed');
+                } else {
+                    console.warn('Session no longer valid');
+                    alert('Your session has expired. Please login again.');
+                    window.location.href = '/admin/login.html';
+                }
+            })
+            .catch(err => console.error('Session check failed:', err));
+    }, 5 * 60 * 1000); // Check every 5 minutes
 
     // Check authentication
     checkAuthentication();
