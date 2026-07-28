@@ -1635,7 +1635,15 @@ app.post('/api/bookings', async (req, res) => {
         );
 
         // --- WhatsApp Notifications ---
-        const adminPhone = process.env.WHATSAPP_ADMIN_PHONE || '0140802797';
+        // Get WhatsApp admin phone from site settings (with .env fallback for backwards compatibility)
+        let adminPhone = null;
+        try {
+            const settings = await db.query('SELECT setting_value FROM site_settings WHERE setting_key = ?', ['whatsapp_phone']);
+            adminPhone = settings.length > 0 ? settings[0].setting_value : null;
+        } catch (err) {
+            console.error('Error fetching WhatsApp phone from settings:', err);
+        }
+        adminPhone = adminPhone || process.env.WHATSAPP_ADMIN_PHONE || '0140802797';
 
         // Notify Admin
         const adminMsg = `🆕 *New Booking Request*\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Service:* ${service}\n\n*Message:* ${message || 'None'}`;
@@ -2759,6 +2767,53 @@ app.put('/api/admin/settings', requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('Error updating settings:', err);
         res.status(500).json({ error: 'Failed to update settings.' });
+    }
+});
+
+// Admin: Sync WhatsApp Social Media Link from Settings
+app.post('/api/admin/sync-whatsapp-social', requireAdmin, async (req, res) => {
+    try {
+        // Get WhatsApp phone from settings
+        const settings = await db.query('SELECT setting_value FROM site_settings WHERE setting_key = ?', ['whatsapp_phone']);
+        const whatsappPhone = settings.length > 0 ? settings[0].setting_value : null;
+
+        if (!whatsappPhone) {
+            return res.status(400).json({ error: 'WhatsApp phone number not configured in settings.' });
+        }
+
+        // Format phone for WhatsApp URL
+        let cleanPhone = whatsappPhone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) {
+            cleanPhone = '254' + cleanPhone.substring(1);
+        }
+        const whatsappUrl = `https://wa.me/${cleanPhone}?text=Hello%20Genius%20Minds`;
+
+        // Check if WhatsApp social link exists
+        const existing = await db.query('SELECT * FROM social_media WHERE name = ?', ['WhatsApp']);
+
+        if (existing.length > 0) {
+            // Update existing WhatsApp link
+            await db.query(
+                'UPDATE social_media SET url = ? WHERE name = ?',
+                [whatsappUrl, 'WhatsApp']
+            );
+            console.log(`✅ Updated WhatsApp social media link to: ${whatsappUrl}`);
+        } else {
+            // Create new WhatsApp link with highest order + 1
+            const maxOrder = await db.query('SELECT MAX(display_order) as max_order FROM social_media');
+            const nextOrder = (maxOrder[0]?.max_order || 0) + 1;
+
+            await db.query(
+                'INSERT INTO social_media (name, url, display_order) VALUES (?, ?, ?)',
+                ['WhatsApp', whatsappUrl, nextOrder]
+            );
+            console.log(`✅ Created WhatsApp social media link: ${whatsappUrl}`);
+        }
+
+        res.json({ success: true, url: whatsappUrl });
+    } catch (err) {
+        console.error('Error syncing WhatsApp social link:', err);
+        res.status(500).json({ error: 'Failed to sync WhatsApp social link.' });
     }
 });
 

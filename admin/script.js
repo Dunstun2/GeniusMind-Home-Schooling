@@ -1972,10 +1972,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const phoneInput = document.getElementById('setting_contact_phone');
             const emailInput = document.getElementById('setting_contact_email');
             const locationInput = document.getElementById('setting_contact_location');
+            const whatsappPhoneInput = document.getElementById('setting_whatsapp_phone');
 
             if (phoneInput) phoneInput.value = settings.contact_phone || '';
             if (emailInput) emailInput.value = settings.contact_email || '';
             if (locationInput) locationInput.value = settings.contact_location || '';
+            if (whatsappPhoneInput) whatsappPhoneInput.value = settings.whatsapp_phone || '';
         } catch (err) {
             console.error('Error loading site settings:', err);
         }
@@ -1994,7 +1996,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 contact_phone: document.getElementById('setting_contact_phone').value.trim(),
                 contact_email: document.getElementById('setting_contact_email').value.trim(),
-                contact_location: document.getElementById('setting_contact_location').value.trim()
+                contact_location: document.getElementById('setting_contact_location').value.trim(),
+                whatsapp_phone: document.getElementById('setting_whatsapp_phone').value.trim()
             };
 
             try {
@@ -2004,6 +2007,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(payload)
                 });
                 if (response.ok) {
+                    // If WhatsApp phone was saved, sync it to social media
+                    if (payload.whatsapp_phone) {
+                        try {
+                            await fetch('/api/admin/sync-whatsapp-social', { method: 'POST' });
+                            console.log('✅ WhatsApp social media link synced');
+                        } catch (syncErr) {
+                            console.error('Warning: Could not sync WhatsApp social link:', syncErr);
+                        }
+                    }
+
                     statusSpan.textContent = '✅ Saved successfully!';
                     statusSpan.style.color = '#10b981';
                     statusSpan.style.display = 'inline';
