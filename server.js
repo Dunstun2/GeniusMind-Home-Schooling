@@ -864,9 +864,15 @@ async function initDatabase() {
                     image_path VARCHAR(500) DEFAULT NULL,
                     is_active TINYINT DEFAULT 1,
                     start_date DATETIME DEFAULT NULL,
-                    end_date DATETIME DEFAULT NULL
+                    end_date DATETIME DEFAULT NULL,
+                    event_start_date DATE DEFAULT NULL,
+                    event_end_date DATE DEFAULT NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
+
+            // Add event date columns if they don't exist (migration for existing databases)
+            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN event_start_date DATE DEFAULT NULL"); } catch (e) { }
+            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN event_end_date DATE DEFAULT NULL"); } catch (e) { }
 
             await dbPool.query(`
                 CREATE TABLE IF NOT EXISTS team_members (
@@ -974,9 +980,6 @@ async function initDatabase() {
             try { await dbPool.query("ALTER TABLE analytics_sessions ADD COLUMN country_flag VARCHAR(20) DEFAULT '🇰🇪'"); } catch (e) { }
             try { await dbPool.query("ALTER TABLE booking_messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL"); } catch (e) { }
             try { await dbPool.query("ALTER TABLE booking_messages ADD COLUMN attachment_name VARCHAR(255) DEFAULT NULL"); } catch (e) { }
-            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN is_active TINYINT DEFAULT 1"); } catch (e) { }
-            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN start_date DATETIME NULL"); } catch (e) { }
-            try { await dbPool.query("ALTER TABLE highlights_banners ADD COLUMN end_date DATETIME NULL"); } catch (e) { }
 
             // Seed default admin user if missing
             const [rows] = await dbPool.query('SELECT id FROM admin_users WHERE username = ?', [defaultUsername]);
@@ -1125,9 +1128,19 @@ async function initDatabase() {
                         image_path TEXT DEFAULT NULL,
                         is_active INTEGER DEFAULT 1,
                         start_date DATETIME DEFAULT NULL,
-                        end_date DATETIME DEFAULT NULL
+                        end_date DATETIME DEFAULT NULL,
+                        event_start_date DATE DEFAULT NULL,
+                        event_end_date DATE DEFAULT NULL
                     )
                 `);
+
+                // Add event date columns if they don't exist (migration for existing databases)
+                try {
+                    await dbConnection.run(`ALTER TABLE highlights_banners ADD COLUMN event_start_date DATE DEFAULT NULL`);
+                } catch (e) { }
+                try {
+                    await dbConnection.run(`ALTER TABLE highlights_banners ADD COLUMN event_end_date DATE DEFAULT NULL`);
+                } catch (e) { }
 
                 await dbConnection.run(`
                     CREATE TABLE IF NOT EXISTS site_settings (
@@ -2683,8 +2696,11 @@ app.post('/api/admin/banners', requireAdmin, upload.single('image'), async (req,
         const {
             banner_type, badge_text, badge_class, title, subtitle,
             btn_primary_action, btn_secondary_action,
-            is_active, start_date, end_date
+            is_active, start_date, end_date,
+            event_start_date, event_end_date
         } = req.body;
+
+        console.log('[BANNER CREATE] Request body:', { banner_type, badge_text, badge_class, title, subtitle, btn_primary_action, btn_secondary_action, is_active, start_date, end_date, event_start_date, event_end_date });
 
         if (!badge_text || !title || !subtitle) {
             return res.status(400).json({ error: 'badge_text, title, and subtitle are required.' });
@@ -2696,16 +2712,19 @@ app.post('/api/admin/banners', requireAdmin, upload.single('image'), async (req,
             INSERT INTO highlights_banners
                 (banner_type, badge_text, badge_class, title, subtitle,
                  btn_primary_action, btn_secondary_action,
-                 image_path, is_active, start_date, end_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 image_path, is_active, start_date, end_date,
+                 event_start_date, event_end_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [banner_type || 'standard', badge_text, badge_class || 'event-badge', title, subtitle,
             btn_primary_action || null, btn_secondary_action || null,
                 imagePath, is_active !== undefined ? parseInt(is_active) : 1,
-            start_date || null, end_date || null]
+            start_date || null, end_date || null,
+            event_start_date || null, event_end_date || null]
         );
+        console.log('[BANNER CREATE] Success - ID:', result.insertId);
         res.status(201).json({ success: true, id: result.insertId });
     } catch (err) {
-        console.error('Error creating banner:', err);
+        console.error('[BANNER CREATE] Error:', err);
         res.status(500).json({ error: 'Failed to create banner.' });
     }
 });
@@ -2721,7 +2740,8 @@ app.put('/api/admin/banners/:id', requireAdmin, upload.single('image'), async (r
         const {
             banner_type, badge_text, badge_class, title, subtitle,
             btn_primary_action, btn_secondary_action,
-            is_active, start_date, end_date
+            is_active, start_date, end_date,
+            event_start_date, event_end_date
         } = req.body;
 
         const imagePath = req.file ? `/uploads/${req.file.filename}` : (existingBanner.image_path);
@@ -2730,12 +2750,14 @@ app.put('/api/admin/banners/:id', requireAdmin, upload.single('image'), async (r
             UPDATE highlights_banners SET
                 banner_type = ?, badge_text = ?, badge_class = ?, title = ?, subtitle = ?,
                 btn_primary_action = ?, btn_secondary_action = ?,
-                image_path = ?, is_active = ?, start_date = ?, end_date = ?
+                image_path = ?, is_active = ?, start_date = ?, end_date = ?,
+                event_start_date = ?, event_end_date = ?
             WHERE id = ?`,
             [banner_type || 'standard', badge_text, badge_class || 'event-badge', title, subtitle,
             btn_primary_action || null, btn_secondary_action || null,
                 imagePath, is_active !== undefined ? parseInt(is_active) : 1,
             start_date || null, end_date || null,
+            event_start_date || null, event_end_date || null,
                 bannerId]
         );
         res.json({ success: true });
