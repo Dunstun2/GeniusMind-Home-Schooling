@@ -862,24 +862,54 @@
                         </div>
                     </div>
 
-                    <!-- Status & Scheduling -->
-                    <div class="form-grid three-cols">
+                    <!-- Status -->
+                    <div class="form-group-glass">
+                        <label for="is_active">Status *</label>
+                        <select id="is_active" name="is_active" required>
+                            <option value="1">Show (Active)</option>
+                            <option value="0">Hide (Inactive)</option>
+                        </select>
+                    </div>
+
+                    <!-- Event/Program Duration (When the actual activity happens) -->
+                    <div class="form-section-header">
+                        <h4 style="color: var(--text-title); font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📅</span> Event/Program Duration
+                        </h4>
+                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;">When is the actual program/event happening? (e.g., Admissions: Jan 1-15, 2027)</p>
+                    </div>
+
+                    <div class="form-grid">
                         <div class="form-group-glass">
-                            <label for="is_active">Status *</label>
-                            <select id="is_active" name="is_active" required>
-                                <option value="1">Show (Active)</option>
-                                <option value="0">Hide (Inactive)</option>
-                            </select>
+                            <label for="event_start_date">Event/Program Start Date</label>
+                            <input type="date" id="event_start_date" name="event_start_date">
+                            <p class="file-help-text">When does the actual program/event start? (e.g., 2027-01-01)</p>
                         </div>
                         <div class="form-group-glass">
-                            <label for="start_date">Schedule Start</label>
+                            <label for="event_end_date">Event/Program End Date</label>
+                            <input type="date" id="event_end_date" name="event_end_date">
+                            <p class="file-help-text">When does the actual program/event end? (e.g., 2027-01-15)</p>
+                        </div>
+                    </div>
+
+                    <!-- Schedule Banner (When the banner displays on the website) -->
+                    <div class="form-section-header">
+                        <h4 style="color: var(--text-title); font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📺</span> Schedule Banner
+                        </h4>
+                        <p style="color: var(--text-muted); font-size: 12px; margin: 0;">When should this banner appear on the public website? (Leave blank to display permanently)</p>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group-glass">
+                            <label for="start_date">Banner Display Start</label>
                             <input type="datetime-local" id="start_date" name="start_date">
-                            <p class="file-help-text">Leave blank to display immediately.</p>
+                            <p class="file-help-text">Date and time when this banner should start displaying on the website. Leave blank to display immediately.</p>
                         </div>
                         <div class="form-group-glass">
-                            <label for="end_date">Schedule End</label>
+                            <label for="end_date">Banner Display End</label>
                             <input type="datetime-local" id="end_date" name="end_date">
-                            <p class="file-help-text">Leave blank to display indefinitely.</p>
+                            <p class="file-help-text">Date and time when this banner should stop displaying. Leave blank to display indefinitely.</p>
                         </div>
                     </div>
 
