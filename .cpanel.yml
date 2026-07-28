@@ -1,5 +1,3 @@
 ---
 deployment:
-  tasks:
-    - /bin/mkdir -p /home/vdranjxy/geniusminds/tmp
-    - /bin/touch /home/vdranjxy/geniusminds/tmp/restart.txt
+  ignore: true
