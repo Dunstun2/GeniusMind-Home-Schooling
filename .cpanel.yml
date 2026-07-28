@@ -1,3 +1,4 @@
 ---
 deployment:
-  ignore: true
+  tasks:
+    - /bin/true
