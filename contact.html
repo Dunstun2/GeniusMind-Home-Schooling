@@ -435,7 +435,7 @@
         // Load contact settings from API and update all phone displays
         async function loadContactSettings() {
             try {
-                const response = await fetch('/api/admin/settings');
+                const response = await fetch('/api/settings');
                 if (!response.ok) throw new Error('Failed to fetch settings');
                 const settings = await response.json();
 
@@ -443,6 +443,8 @@
                 const contactEmail = settings.contact_email || 'geniusminds2425@gmail.com';
                 const contactLocation = settings.contact_location || 'Nairobi, Kenya';
                 const whatsappPhone = settings.whatsapp_phone || '254743322975'; // For WhatsApp link
+
+                console.log('📱 Loaded settings:', { contactPhone, contactEmail, contactLocation, whatsappPhone });
 
                 // Update phone displays
                 const phoneElements = document.querySelectorAll('#display-phone, #display-phone-q');
@@ -470,8 +472,11 @@
 
                 // Update WhatsApp links with extracted phone number
                 const whatsappLinks = document.querySelectorAll('a[href*="wa.me"]');
+                console.log(`Found ${whatsappLinks.length} WhatsApp links to update`);
                 whatsappLinks.forEach(link => {
+                    const oldHref = link.href;
                     link.href = `https://wa.me/${whatsappPhone}?text=Hello%20Genius%20Minds`;
+                    console.log(`Updated WhatsApp link: ${oldHref} → ${link.href}`);
                 });
 
             } catch (err) {
@@ -494,6 +499,9 @@
 
             // Load contact settings
             loadContactSettings();
+
+            // Poll for updates every 5 seconds (in case admin scanned new QR)
+            setInterval(loadContactSettings, 5000);
         });
     </script>
 </body>
