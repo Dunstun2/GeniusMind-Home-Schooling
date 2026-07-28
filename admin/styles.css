@@ -2643,3 +2643,32 @@ body.light-mode .form-section-header h4 {
 body.light-mode .form-section-header p {
     color: #64748b;
 }
+
+
+/* Date and Datetime Input Calendar Icon Fix for Dark Mode */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+    color-scheme: dark;
+}
+
+body.light-mode input[type="date"],
+body.light-mode input[type="datetime-local"],
+body.light-mode input[type="time"] {
+    color-scheme: light;
+}
+
+/* Ensure calendar icon is visible in dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.2);
+    cursor: pointer;
+}
+
+body.light-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.light-mode input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: none;
+    cursor: pointer;
+}
