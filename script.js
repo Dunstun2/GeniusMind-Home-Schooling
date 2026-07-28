@@ -800,6 +800,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div class="badge ${banner.badge_class}">${banner.badge_text}</div>
                                 <h1 class="hero-title animate-up">${banner.title}</h1>
                                 <p class="hero-subtitle animate-up delay-1">${banner.subtitle}</p>
+                                ${banner.event_start_date && banner.event_end_date ? `
+                                <div class="hero-event-dates animate-up delay-1" style="margin-top: 12px; padding: 12px 16px; background: rgba(255,255,255,0.08); border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); font-size: 13px; color: #cbd5e1; white-space: nowrap; overflow: auto;">
+                                    📅 <strong>${new Date(banner.event_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(banner.event_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                                </div>
+                                ` : ''}
                                 <div class="hero-buttons animate-up delay-2">
                                     ${buttonsHtml}
                                 </div>
