@@ -1,0 +1,1 @@
+Static marketing pages for Genius Minds Homeschooling plus a token-based booking tracking portal, served as plain HTML without any build step or framework.

@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: admin_panel
-title: Admin Dashboard SPA (Client-Side)
+title: Admin Portal SPA (Dashboard, CMS & Analytics)
 scope:
     - admin/
 source_files: []

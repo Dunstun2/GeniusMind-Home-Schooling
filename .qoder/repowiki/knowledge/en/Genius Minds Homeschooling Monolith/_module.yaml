@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: ""
-title: Genius Minds Homeschooling Full-Stack Application
+title: Genius Minds Homeschooling Monolith
 scope:
     - README.md
     - .gitignore

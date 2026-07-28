@@ -3,11 +3,11 @@ schema_version: 1
 locale: en-US
 branch: master
 nodes_managed: true
-exported_at: "2026-07-16T02:21:21Z"
+exported_at: "2026-07-19T18:28:03Z"
 modules:
     "":
-        dir_name: Genius Minds Homeschooling Full-Stack Application
-        title: Genius Minds Homeschooling Full-Stack Application
+        dir_name: Genius Minds Homeschooling Monolith
+        title: Genius Minds Homeschooling Monolith
         scope:
             - README.md
             - .gitignore
@@ -34,8 +34,8 @@ modules:
         depends_on: []
         related_to: []
     admin_panel:
-        dir_name: Admin Dashboard SPA (Client-Side)
-        title: Admin Dashboard SPA (Client-Side)
+        dir_name: Admin Portal SPA (Dashboard, CMS & Analytics)
+        title: Admin Portal SPA (Dashboard, CMS & Analytics)
         scope:
             - admin/
         source_files: []
@@ -43,8 +43,8 @@ modules:
         depends_on: []
         related_to: []
     public_website:
-        dir_name: Public Marketing Website & Booking Tracker
-        title: Public Marketing Website & Booking Tracker
+        dir_name: Genius Minds Public Marketing Site & Booking Tracker
+        title: Genius Minds Public Marketing Site & Booking Tracker
         scope:
             - index.html
             - about.html
@@ -59,8 +59,8 @@ modules:
         depends_on: []
         related_to: []
     shared_components:
-        dir_name: Shared UI Components & Global Client-Side Runtime
-        title: Shared UI Components & Global Client-Side Runtime
+        dir_name: Shared UI Components & Global Client Runtime
+        title: Shared UI Components & Global Client Runtime
         scope:
             - components/
             - styles.css

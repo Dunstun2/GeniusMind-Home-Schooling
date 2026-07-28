@@ -1,0 +1,1 @@
+Client-side runtime that injects reusable navbar/footer HTML fragments, drives theme switching, mobile menus, and fetches CMS content from /api/* endpoints for every page.

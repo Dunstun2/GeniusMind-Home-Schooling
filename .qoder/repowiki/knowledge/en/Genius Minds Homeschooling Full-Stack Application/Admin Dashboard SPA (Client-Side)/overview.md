@@ -1,1 +1,0 @@
-Single-page admin portal for Genius Minds Homeschooling providing dashboard analytics, booking/email management, content CMS, and site configuration behind a session-authenticated login.
