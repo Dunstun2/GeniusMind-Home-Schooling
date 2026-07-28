@@ -66,6 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Session check failed:', err));
     }, 5 * 60 * 1000); // Check every 5 minutes
 
+    // ==========================================
+    // User Activity Tracking (Mouse/Keyboard)
+    // ==========================================
+    // Refresh session every time user interacts (with debouncing)
+    let activityTimeout;
+    const updateSessionActivity = () => {
+        clearTimeout(activityTimeout);
+        activityTimeout = setTimeout(() => {
+            // Make a minimal request to update server-side activity
+            fetch('/api/admin/check-session', { method: 'GET' })
+                .catch(err => console.error('Activity update failed:', err));
+        }, 2000); // Debounce: wait 2 seconds after last activity
+    };
+
+    // Listen for user interactions
+    document.addEventListener('mousemove', updateSessionActivity);
+    document.addEventListener('keydown', updateSessionActivity);
+    document.addEventListener('click', updateSessionActivity);
+    document.addEventListener('scroll', updateSessionActivity);
+
     // Check authentication
     checkAuthentication();
 

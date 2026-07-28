@@ -151,8 +151,12 @@ app.use((req, res, next) => {
             return res.status(401).json({ error: 'Session expired due to inactivity. Please login again.' });
         }
 
-        // Update last activity timestamp
+        // Update last activity timestamp for this request
         req.session.lastActivity = now;
+        // Explicitly save the session to ensure it persists
+        req.session.save((err) => {
+            if (err) console.error('Session save error in inactivity check:', err);
+        });
     }
     next();
 });
@@ -1595,6 +1599,11 @@ function parseUserAgent(uaString) {
 // Middleware: Check if logged in as Admin
 function requireAdmin(req, res, next) {
     if (req.session && req.session.isAdmin) {
+        // Update activity timestamp on every admin request
+        req.session.lastActivity = Date.now();
+        req.session.save((err) => {
+            if (err) console.error('Session save error:', err);
+        });
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized. Admin access required.' });
