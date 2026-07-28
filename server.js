@@ -120,15 +120,41 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Sessions setup
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes of inactivity
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'genius_minds_secret_key_2026',
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
 }));
+
+// Middleware: Check for session inactivity and logout if inactive
+app.use((req, res, next) => {
+    if (req.session && req.session.isAdmin) {
+        const now = Date.now();
+        const lastActivity = req.session.lastActivity || now;
+        const timeSinceLastActivity = now - lastActivity;
+
+        // If inactive for longer than INACTIVITY_TIMEOUT, logout
+        if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+            req.session.destroy((err) => {
+                if (err) console.error('Session destruction error:', err);
+            });
+            res.clearCookie('connect.sid');
+            return res.status(401).json({ error: 'Session expired due to inactivity. Please login again.' });
+        }
+
+        // Update last activity timestamp
+        req.session.lastActivity = now;
+    }
+    next();
+});
 
 // ==========================================
 // DUAL-MODE DATABASE ADAPTER (SQLite & Memory)
